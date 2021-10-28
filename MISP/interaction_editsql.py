@@ -354,6 +354,7 @@ def interaction(raw_proc_example_pairs, user, agent, max_generation_length, outp
     count_exception, count_exit = 0, 0
     for idx, (raw_example, example) in enumerate(raw_proc_example_pairs):
         with torch.no_grad():
+            pdb.set_trace()
             input_item = agent.world_model.semparser.spider_single_turn_encoding(
                 example, max_generation_length)
 
@@ -647,7 +648,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
 
 
 if __name__ == "__main__":
-    pdb.set_trace()
     params = interpret_args()
 
     # Prepare the dataset into the proper form.
@@ -681,18 +681,6 @@ if __name__ == "__main__":
         model.load(os.path.join(params.logdir, "model_best.pt"))
         model = model.to(device)
         model.eval()
-
-    def create_new_model(old_model):
-        del old_model
-        torch.cuda.empty_cache()
-        new_model = SchemaInteractionATISModel(
-            params,
-            data.input_vocabulary,
-            data.output_vocabulary,
-            data.output_vocabulary_schema,
-            data.anonymizer if params.anonymize and params.anonymization_scoring else None)
-        new_model.to(device)
-        return new_model
 
     print("ask_structure: {}".format(params.ask_structure))
     question_generator = QuestionGenerator(bool_structure_question=params.ask_structure)

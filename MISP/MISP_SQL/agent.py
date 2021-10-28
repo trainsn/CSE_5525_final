@@ -125,7 +125,7 @@ class Agent:
             hyp.tag_seq, start_pos=start_pos, bool_return_first=True,
             eval_tf=user.eval_outputs)
 
-        while len(err_su_pointer_pairs): # for each potential erroneous unit
+        while len(err_su_pointer_pairs):    # for each potential erroneous unit
             su, pointer = err_su_pointer_pairs[0]
             semantic_tag = su[0]
             print("Semantic Unit: {}".format(su))

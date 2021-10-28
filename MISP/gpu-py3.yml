@@ -113,5 +113,5 @@ dependencies:
     - wcwidth==0.1.7
     - xlrd==1.2.0
     - xlwt==1.3.0
-prefix: /home/yao.470/anaconda2/envs/gpu-py3
+prefix: /users/PAS0027/trainsn/anaconda3/envs/gpu-py3
 

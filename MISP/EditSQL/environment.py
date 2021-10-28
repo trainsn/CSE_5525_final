@@ -21,7 +21,7 @@ class RealUser(BaseRealUser):
         self.bool_structure_question = bool_structure_question
 
     def show_table(self, table_id):
-        schema = {} # a dict of {table_name: [column names, row1, row2, row3]}
+        schema = {}     # a dict of {table_name: [column names, row1, row2, row3]}
 
         # load table content
         conn = sqlite3.connect(self.db_path + '{}/{}.sqlite'.format(table_id, table_id))

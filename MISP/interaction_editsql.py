@@ -36,6 +36,8 @@ from MISP_SQL.utils import SELECT_AGG_v2, WHERE_COL, WHERE_OP, WHERE_ROOT_TERM, 
     HAV_OP_v2, HAV_ROOT_TERM_v2, ORDER_AGG_v2, ORDER_DESC_ASC, ORDER_LIMIT, IUEN_v2, OUTSIDE
 from user_study_utils import *
 
+import pdb
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 VALID_EVAL_METRICS = [Metrics.LOSS, Metrics.TOKEN_ACCURACY, Metrics.STRING_ACCURACY]
@@ -2134,6 +2136,7 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
 
 
 if __name__ == "__main__":
+    pdb.set_trace()
     params = interpret_args()
 
     # Prepare the dataset into the proper form.
@@ -2240,202 +2243,28 @@ if __name__ == "__main__":
     raw_train_examples = json.load(open(os.path.join(params.raw_data_directory, "train_reordered.json")))
     raw_valid_examples = json.load(open(os.path.join(params.raw_data_directory, "dev_reordered.json")))
 
-    if params.job == 'online_learning':
-        update_iter = params.update_iter #1000
-        print("## data_seed: {}".format(params.data_seed))
-        print("## supervision: {}".format(params.supervision))
-        print("## start: {}, end: {}".format(params.start_iter, params.end_iter))
-        print("## update_iter: {}".format(update_iter)) # fixed value
+    # only leave job == "test_w_interaction"
+    if params.user == "real":
+        user_study_indices = json.load(open(os.path.join(
+            params.raw_data_directory, "user_study_indices.json"), "r"))  # random.seed(1234), 100
+        reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
+        reorganized_data = [reorganized_data[idx] for idx in user_study_indices]
 
-        # load indices for initial/online training instances
-        if params.setting == 'online_pretrain_10p':
-            train_indices = json.load(open(os.path.join(os.path.dirname(params.raw_train_filename),
-                                                        "train_indices_10p.json")))
-        else:
-            raise Exception("Invalid params.setting=%s!" % params.setting)
-
-        init_raw_train_examples = [raw_train_examples[idx] for idx in train_indices["init"]]
-        online_raw_train_examples = [raw_train_examples[idx] for idx in
-                                     train_indices["online_seed%d" % params.data_seed]]
-        print("\n## setting{}: size {}".format(params.setting, len(init_raw_train_examples)))
-
-        # in case of vocab mismatching, we should re-process the full training data from spider_data_removefrom
-        database_schema = None
-        if params.database_schema_filename:
-            if 'removefrom' not in params.data_directory:
-                database_schema, column_names_surface_form, column_names_embedder_input = data.read_database_schema_simple(
-                    params.database_schema_filename)
-            else:
-                database_schema, column_names_surface_form, column_names_embedder_input = data.read_database_schema(
-                    params.database_schema_filename)
-
-        int_load_function = load_function(params,
-                                          data.entities_dictionary,
-                                          data.anonymizer,
-                                          database_schema=database_schema)
-
-        # full training examples
-        full_train_examples = ds.DatasetSplit(
-            os.path.join(params.data_directory, "train_full.pkl"),
-            os.path.join(os.path.dirname(params.raw_train_filename), "train.pkl"),
-            int_load_function).examples
-
-        init_train_examples = [full_train_examples[idx] for idx in train_indices["init"]]
-        online_train_examples = [full_train_examples[idx] for idx in train_indices["online_seed%d" % params.data_seed]]
-
-        # load full annotation cost: truth_annotation_cost
-        train_gold_record_path = os.path.join(os.path.dirname(params.logdir),
-                                              "logs_spider_editsql/records_train_nointeract_gold.json")
-        train_gold_records = json.load(open(train_gold_record_path, "r"))
-        full_annotation_costs = [len(list(filter(lambda x: x[0] != OUTSIDE, eval(item["tag_seq"]))))
-                                 for item in train_gold_records]
-        init_train_full_annotation_costs = [full_annotation_costs[idx] for idx in train_indices['init']]
-        online_train_full_annotation_costs = [full_annotation_costs[idx] for idx in train_indices["online_seed%d" % params.data_seed]]
-
-        print("## initial annotation cost: {}".format(sum(init_train_full_annotation_costs)))
-
-        # online learning
-        if params.supervision == "full_expert":
-            model_save_dir = os.path.join(
-                params.logdir, "checkpoint_online_SUP{}_ITER{}_SEED{}".format(
-                    params.supervision, update_iter, params.data_seed))
-            if not os.path.isdir(model_save_dir):
-                os.mkdir(model_save_dir)
-
-            online_learning_full(online_train_examples, init_train_examples, data, agent,
-                                 model_save_dir, update_iter, create_new_model,
-                                 online_train_full_annotation_costs,
-                                 start_idx=params.start_iter, end_idx=params.end_iter)
-
-        elif params.supervision == 'misp_neil_perfect':
-            model_save_dir = os.path.join(
-                params.logdir, "checkpoint_online_SUPfull_ITER{}_DATASEED{}".format(
-                    update_iter, params.data_seed))
-
-            online_train_gold_record = [train_gold_records[idx] for idx in
-                                        train_indices["online_seed%d" % params.data_seed]]
-
-            online_learning_misp_perfect(online_train_examples, online_raw_train_examples, data, user, agent,
-                                         params.eval_maximum_sql_length, model_save_dir, params.output_path,
-                                         online_train_gold_record, update_iter, metrics=FINAL_EVAL_METRICS,
-                                         database_username=params.database_username,
-                                         database_password=params.database_password,
-                                         database_timeout=params.database_timeout)
-
-        elif params.supervision.startswith("misp_neil"): # exclude misp_neil_perfect
-            def utterance_revision(utterance, new_output_sequences):
-                utterance.process_gold_seq(new_output_sequences, data.entities_dictionary,
-                                           utterance.available_snippets,
-                                           params.anonymize, data.anonymizer, {})
-                return utterance
-
-            model_save_dir = os.path.join(
-                params.logdir, "checkpoint_online_SUP{}_OP{}_ED{}{}{}{}ITER{}_DATASEED{}".format(
-                    params.supervision, params.num_options, params.err_detector,
-                    ("_FRIENDLY" if params.friendly_agent else ""),
-                    ("_GoldUser" if params.user == "gold_sim" else ""),
-                    ("_ASKSTRUCT" if params.ask_structure else ""),
-                    update_iter, params.data_seed))
-            if not os.path.isdir(model_save_dir):
-                os.mkdir(model_save_dir)
-
-            if params.start_iter > 0:
-                print("Loading previous checkpoints at iter {}...".format(params.start_iter))
-                model_path = os.path.join(model_save_dir, "%d" % params.start_iter, "model_best.pt")
-                agent.world_model.semparser.load(model_path)
-
-            online_learning(online_train_examples, init_train_examples, online_raw_train_examples, data,
-                            user, agent, params.eval_maximum_sql_length, model_save_dir, params.output_path,
-                            update_iter, create_new_model, utterance_revision, start_idx=params.start_iter,
-                            end_idx=params.end_iter, metrics=FINAL_EVAL_METRICS,
-                            database_username=params.database_username,
-                            database_password=params.database_password,
-                            database_timeout=params.database_timeout,
-                            bool_interaction=True, supervision=params.supervision)
-
-        elif params.supervision.startswith('self-train'):
-            def utterance_revision(utterance, new_output_sequences):
-                utterance.process_gold_seq(new_output_sequences, data.entities_dictionary,
-                                           utterance.available_snippets,
-                                           params.anonymize, data.anonymizer, {})
-                return utterance
-
-            model_save_dir = os.path.join(
-                params.logdir, "checkpoint_online_SUP{}_ITER{}_DATASEED{}".format(
-                    params.supervision, update_iter, params.data_seed))
-            if not os.path.isdir(model_save_dir):
-                os.mkdir(model_save_dir)
-
-            if params.start_iter > 0:
-                print("Loading previous checkpoints at iter {}...".format(params.start_iter))
-                model_path = os.path.join(model_save_dir, "%d" % params.start_iter, "model_best.pt")
-                agent.world_model.semparser.load(model_path)
-
-            online_learning_self_training(params.supervision, online_train_examples, init_train_examples,
-                                          online_raw_train_examples, data,
-                                          agent, params.eval_maximum_sql_length, model_save_dir, params.output_path,
-                                          update_iter, create_new_model, utterance_revision,
-                                          start_idx=params.start_iter,
-                                          end_idx=params.end_iter, metrics=FINAL_EVAL_METRICS,
-                                          database_username=params.database_username,
-                                          database_password=params.database_password,
-                                          database_timeout=params.database_timeout)
-
-        else:
-            assert params.supervision in {"bin_feedback", "bin_feedback_expert"}
-
-            def utterance_revision(utterance, new_output_sequences):
-                utterance.process_gold_seq(new_output_sequences, data.entities_dictionary,
-                                           utterance.available_snippets,
-                                           params.anonymize, data.anonymizer, {})
-                return utterance
-
-            model_save_dir = os.path.join(
-                params.logdir, "checkpoint_online_SUP{}_ITER{}_SEED{}".format(
-                    params.supervision, update_iter, params.data_seed))
-            if not os.path.isdir(model_save_dir):
-                os.mkdir(model_save_dir)
-
-            if params.start_iter > 0:
-                print("Loading previous checkpoints at iter {}...".format(params.start_iter))
-                model_path = os.path.join(model_save_dir, "%d" % params.start_iter, "model_best.pt")
-                agent.world_model.semparser.load(model_path)
-
-            online_learning_bin_feedback(params.supervision, online_train_examples, init_train_examples,
-                                         online_raw_train_examples, data,
-                                         agent, params.eval_maximum_sql_length, model_save_dir, params.output_path,
-                                         update_iter, create_new_model, utterance_revision,
-                                         online_train_full_annotation_costs,
-                                         start_idx=params.start_iter,
-                                         end_idx=params.end_iter, metrics=FINAL_EVAL_METRICS,
-                                         database_username=params.database_username,
-                                         database_password=params.database_password,
-                                         database_timeout=params.database_timeout)
+        real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length, params.output_path)
 
     else:
-        if params.user == "real":
-            user_study_indices = json.load(open(os.path.join(
-                params.raw_data_directory, "user_study_indices.json"), "r")) # random.seed(1234), 100
-            reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-            reorganized_data = [reorganized_data[idx] for idx in user_study_indices]
+        reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
 
-            real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length, params.output_path)
-
-        else:
-            reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-
-            eval_file = params.output_path[:-5] + "_prediction.json"
-            eval_results, interaction_records = interaction(
-                reorganized_data, user, agent,
-                params.eval_maximum_sql_length,
-                eval_file,
-                metrics=FINAL_EVAL_METRICS,
-                database_username=params.database_username,
-                database_password=params.database_password,
-                database_timeout=params.database_timeout,
-                write_results=True,
-                compute_metrics=params.compute_metrics,
-                bool_interaction=True)
-            json.dump(interaction_records, open(params.output_path, "w"), indent=4)
-
-
+        eval_file = params.output_path[:-5] + "_prediction.json"
+        eval_results, interaction_records = interaction(
+            reorganized_data, user, agent,
+            params.eval_maximum_sql_length,
+            eval_file,
+            metrics=FINAL_EVAL_METRICS,
+            database_username=params.database_username,
+            database_password=params.database_password,
+            database_timeout=params.database_timeout,
+            write_results=True,
+            compute_metrics=params.compute_metrics,
+            bool_interaction=True)
+        json.dump(interaction_records, open(params.output_path, "w"), indent=4)

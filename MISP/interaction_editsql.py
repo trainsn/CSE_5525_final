@@ -2154,7 +2154,7 @@ if __name__ == "__main__":
                 db_list.append(db)
 
     if params.job == "online_learning" and params.supervision == 'full_train':
-        model = None # the model will be renewed immediately in online training
+        model = None    # the model will be renewed immediately in online training
     else:
         # model loading
         model = SchemaInteractionATISModel(

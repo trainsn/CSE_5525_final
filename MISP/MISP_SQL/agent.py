@@ -141,7 +141,7 @@ class Agent:
                 if cheat_sheet[user_feedback][0]: # user affirms the decision
                     self.world_model.apply_pos_feedback(su, hyp.dec_seq, hyp.dec_seq[:su[-1]])
                     start_pos = pointer + 1
-                else: # user negates the decision
+                else:   # user negates the decision
                     if cheat_sheet[user_feedback][1] == 0:
                         dec_seq_idx = su[-1]
                         dec_prefix = hyp.dec_seq[:dec_seq_idx]
@@ -180,7 +180,7 @@ class Agent:
                                     dec_prefix = self.world_model.apply_neg_feedback(
                                         cand_semantic_units[idx], cand_hypotheses[idx].dec_seq, dec_prefix)
 
-                        else: # regular user simulator
+                        else:   # regular user simulator
                             # present options
                             opt_question, opt_answer_sheet, sel_none_of_above = self.q_gen.option_generation(
                                 cand_semantic_units, hyp.tag_seq, pointer)
@@ -210,7 +210,7 @@ class Agent:
                                                        sel_none_of_above + 1 in user_selections):
                             return hyp, False
 
-                    else: # type 1 unit: for decisions with only yes/no choices, we "flip" the current decision
+                    else:   # type 1 unit: for decisions with only yes/no choices, we "flip" the current decision
                         assert cheat_sheet[user_feedback][1] == 1
                         dec_seq_idx = su[-1]
 

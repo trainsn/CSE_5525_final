@@ -25,13 +25,13 @@ OUTSIDE = "O"
 END_NESTED = "##END_NESTED##"
 
 # spider -> editsql
-ORDER_DESC_ASC = 'ORDER_DESC_ASC' # (ORDER_DESC_ASC, (col, agg, bool_distinct), desc_asc, p(desc_asc), dec_idx)
-ORDER_LIMIT = 'ORDER_LIMIT' # (ORDER_DESC_ASC, (col, agg, bool_distinct), bool_limit, p(limit), dec_idx)
-SELECT_AGG_v2 = 'SELECT_AGG_v2' # (SELECT_AGG_v2, col, agg, bool_distinct, avg_prob, dec_idx)
+ORDER_DESC_ASC = 'ORDER_DESC_ASC'       # (ORDER_DESC_ASC, (col, agg, bool_distinct), desc_asc, p(desc_asc), dec_idx)
+ORDER_LIMIT = 'ORDER_LIMIT'     # (ORDER_DESC_ASC, (col, agg, bool_distinct), bool_limit, p(limit), dec_idx)
+SELECT_AGG_v2 = 'SELECT_AGG_v2'     # (SELECT_AGG_v2, col, agg, bool_distinct, avg_prob, dec_idx)
 ORDER_AGG_v2 = 'ORDER_AGG_v2'
 HAV_AGG_v2 = 'HAV_AGG_v2'
-HAV_OP_v2 = 'HAV_OP_v2' # (HAV_OP_v2, (col, agg, bool_distinct), op, prob(op), dec_idx)
-HAV_ROOT_TERM_v2 = 'HAV_ROOT_TERM_v2' # # (HAV_OP_v2, (col, agg, bool_distinct), op, 'root'/'terminal', prob, dec_idx)
+HAV_OP_v2 = 'HAV_OP_v2'     # (HAV_OP_v2, (col, agg, bool_distinct), op, prob(op), dec_idx)
+HAV_ROOT_TERM_v2 = 'HAV_ROOT_TERM_v2'      # (HAV_OP_v2, (col, agg, bool_distinct), op, 'root'/'terminal', prob, dec_idx)
 IUEN_v2 = 'IUEN_v2'
 
 
@@ -62,7 +62,7 @@ def helper_find_closest_bw(tag_seq, start_idx, tgt_name=None, tgt_id=None):
             else:
                 idx -= 1
 
-    return -1 # not found
+    return -1   # not found
 
 
 class bcolors:
@@ -85,8 +85,8 @@ class Hypothesis:
         # Note: do not create hyp from scratch during decoding (may lead to wrong self.dec_prefix)
         self.dec_prefix = list(dec_prefix) # given decoding prefix, must execute
 
-        self.tag_seq = [] # sequence of tags
-        self.dec_seq = [] # sequence of decisions
+        self.tag_seq = []   # sequence of tags
+        self.dec_seq = []   # sequence of decisions
         self.dec_seq_idx = 0
 
         self.logprob = 0.0

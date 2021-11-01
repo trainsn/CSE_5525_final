@@ -203,7 +203,6 @@ def interpret_args():
     parser.add_argument('--ask_structure', type=int, default=0, choices=[0, 1],
                         help='[INTERACTION] Set to True to allow questions about query structure '
                              '(WHERE/GROUP_COL, ORDER/HAV_AGG_v2) in NL.')
-    parser.add_argument('--output_path', type=str, default='temp', help='[INTERACTION] Where to save outputs.')
 
     # online learning
     parser.add_argument('--setting', type=str, default='', choices=['online_pretrain_10p', 'full_train'],
@@ -311,7 +310,7 @@ def extract_clause_asterisk(g_sql_toks):
     return kw2item
 
 
-def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length, record_save_path):
+def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
 
     database_schema = read_schema(table_schema_path)
 
@@ -319,15 +318,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
     st = 0
     time_spent = datetime.timedelta()
     count_exception, count_exit = 0, 0
-
-    if os.path.isfile(record_save_path):
-        saved_results = json.load(open(record_save_path, 'r'))
-        pdb.set_trace()
-        st = saved_results['st']
-        interaction_records = saved_results['interaction_records']
-        count_exit = saved_results['count_exit']
-        count_exception = saved_results['count_exception']
-        time_spent = datetime.timedelta(pytimeparse.parse(saved_results['time_spent']))
 
     pdb.set_trace()
     for idx, (raw_example, example) in enumerate(raw_proc_example_pairs):
@@ -426,12 +416,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
                       'exact_score': exact_score, 'partial_scores': "{}".format(partial_scores), 'hardness': hardness,
                       'idx': idx}
             interaction_records.append(record)
-
-            print("Saving records...")
-            json.dump({'interaction_records': interaction_records,
-                       'st': idx+1, 'time_spent': str(time_spent),
-                       'count_exit': count_exit, 'count_exception': count_exception},
-                      open(record_save_path, "w"), indent=4)
 
             end_signal = input(bcolors.GREEN + bcolors.BOLD +
                                    "Next? Press 'Enter' to continue, Ctrl+C to quit." + bcolors.ENDC)
@@ -536,4 +520,4 @@ if __name__ == "__main__":
 
     # only leave job == "test_w_interaction" and user == "real"
     reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-    real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length, params.output_path)
+    real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length)

@@ -378,7 +378,7 @@ class Agent:
                                 hyp.tag_seq, start_pos=start_pos, bool_return_first=True)
                             continue
 
-                        for idx in range(len(opt_answer_sheet)): # user selection feedback incorporation
+                        for idx in range(len(opt_answer_sheet)):    # user selection feedback incorporation
                             if idx + 1 in user_selections:
                                 # update dec_prefix for components whose only choice is selected
                                 dec_prefix = self.world_model.apply_pos_feedback(
@@ -399,7 +399,7 @@ class Agent:
                                                        sel_none_of_above + 1 in user_selections):
                             return hyp, False
 
-                    else: # type 1 unit: for decisions with only yes/no choices, we "flip" the current decision
+                    else:   # type 1 unit: for decisions with only yes/no choices, we "flip" the current decision
                         assert cheat_sheet[user_feedback][1] == 1
                         dec_seq_idx = su[-1]
 

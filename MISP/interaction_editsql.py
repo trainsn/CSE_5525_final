@@ -185,10 +185,7 @@ def interpret_args():
                         help='Set the job. For parser pretraining, see other scripts.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--raw_data_directory', type=str, help='The data directory of the raw spider data.')
-
     parser.add_argument('--num_options', type=str, default='3', help='[INTERACTION] Number of options.')
-    parser.add_argument('--user', type=str, default='sim', choices=['sim', 'gold_sim', 'real'],
-                        help='[INTERACTION] User type.')
     parser.add_argument('--err_detector', type=str, default='any',
                         help='[INTERACTION] The error detector: '
                              '(1) prob=x for using policy probability threshold;'
@@ -314,208 +311,6 @@ def extract_clause_asterisk(g_sql_toks):
     return kw2item
 
 
-def interaction(raw_proc_example_pairs, user, agent, max_generation_length, output_path,
-                metrics=None, database_username=None, database_password=None, database_timeout=None,
-                write_results=False, compute_metrics=False, bool_interaction=True):
-    """ Evaluates a sample of interactions. """
-    database_schema = read_schema(table_schema_path)
-
-    def _evaluation(example, gen_sequence, raw_query):
-        # check acc & add to record
-        flat_pred = example.flatten_sequence(gen_sequence)
-        pred_sql_str = ' '.join(flat_pred)
-        assert len(example.identifier.split('/')) == 2
-        database_id, interaction_id = example.identifier.split('/')
-        postprocessed_sql_str = postprocess_one(pred_sql_str, database_schema[database_id])
-        try:
-            exact_score, partial_scores, hardness = evaluate_single(
-                postprocessed_sql_str, raw_query, db_path, database_id, agent.world_model.kmaps)
-        except:
-            question = example.interaction.utterances[0].original_input_seq
-            print("Exception in evaluate_single:\nidx: {}, db: {}, question: {}\np_str: {}\ng_str: {}\n".format(
-                idx, database_id, " ".join(question), postprocessed_sql_str, raw_query))
-            exact_score = 0.0
-            partial_scores = "Exception"
-            hardness = "Unknown"
-
-        return exact_score, partial_scores, hardness
-
-    if write_results:
-        predictions_file = open(output_path, "w")
-        print("Predicting with file: " + output_path)
-
-    metrics_sums = {}
-    for metric in metrics:
-        metrics_sums[metric] = 0.
-
-    interaction_records = []
-
-    starting_time = datetime.datetime.now()
-    count_exception, count_exit = 0, 0
-    for idx, (raw_example, example) in enumerate(raw_proc_example_pairs):
-        with torch.no_grad():
-            pdb.set_trace()
-            input_item = agent.world_model.semparser.spider_single_turn_encoding(
-                example, max_generation_length)
-
-            question = example.interaction.utterances[0].original_input_seq
-            true_sql = example.interaction.utterances[0].original_gold_query
-            print("\n" + "#" * 50)
-            print("Example {}:".format(idx))
-            print("NL input: {}".format(" ".join(question)))
-            print("True SQL: {}".format(" ".join(true_sql)))
-
-            g_sql = raw_example['sql']
-            g_sql["extracted_clause_asterisk"] = extract_clause_asterisk(true_sql)
-            g_sql["column_names_surface_form_to_id"] = input_item[-1].column_names_surface_form_to_id
-            g_sql["base_vocab"] = agent.world_model.vocab
-
-            try:
-                hyp = agent.world_model.decode(input_item, bool_verbal=False, dec_beam_size=1)[0]
-                print("-" * 50 + "\nBefore interaction: \ninitial SQL: {}".format(" ".join(hyp.sql)))
-            except Exception: # tag_seq generation exception - e.g., when its syntax is wrong
-                count_exception += 1
-                print("Decoding Exception (count = {}) in example {}!".format(count_exception, idx))
-                final_encoder_state, encoder_states, schema_states, max_generation_length, snippets, input_sequence, \
-                    previous_queries, previous_query_states, input_schema = input_item
-                prediction = agent.world_model.semparser.decoder(
-                    final_encoder_state,
-                    encoder_states,
-                    schema_states,
-                    max_generation_length,
-                    snippets=snippets,
-                    input_sequence=input_sequence,
-                    previous_queries=previous_queries,
-                    previous_query_states=previous_query_states,
-                    input_schema=input_schema,
-                    dropout_amount=0.0)
-                print("-" * 50 + "\nBefore interaction: \ninitial SQL: {}".format(" ".join(prediction.sequence)))
-                sequence = prediction.sequence
-                probability = prediction.probability
-
-                exact_score, partial_scores, hardness = _evaluation(example, sequence, raw_example['query'])
-
-                record = {'nl': " ".join(question), 'true_sql': " ".join(true_sql),
-                          'true_sql_i': "{}".format(g_sql),
-                          'sql': "{}".format(sequence), 'dec_seq': "None",
-                          'tag_seq': "None", 'logprob': "{}".format(np.log(probability)),
-                          "questioned_indices": [], 'q_counter': 0,
-                          'exact_score': exact_score, 'partial_scores': "{}".format(partial_scores),
-                          'hardness': hardness, 'exit': False, 'exception': True, 'idx': idx}
-                interaction_records.append(record)
-            else:
-                if not bool_interaction:
-                    # print("DEBUG:")
-                    # _, eval_outputs, true_sels, true_sus = user.error_evaluator.compare(
-                    #     g_sql, 0, hyp.tag_seq, bool_return_true_selections=True,
-                    #     bool_return_true_semantic_units=True)
-                    # for unit, eval_output, true_sel, true_su in zip(hyp.tag_seq, eval_outputs, true_sels, true_sus):
-                    #     print("SU: {}, EVAL: {}, TSEL: {}, TSU: {}".format(unit, eval_output, true_sel, true_su))
-
-                    exact_score, partial_scores, hardness = _evaluation(example, hyp.sql, raw_example['query'])
-
-                    record = {'nl': " ".join(question), 'true_sql': " ".join(true_sql),
-                              'true_sql_i': "{}".format(g_sql),
-                              'sql': "{}".format(hyp.sql), 'dec_seq': "{}".format(hyp.dec_seq),
-                              'tag_seq': "{}".format(hyp.tag_seq), 'logprob': "{}".format(hyp.logprob),
-                              "questioned_indices": [], 'q_counter': 0,
-                              'exact_score': exact_score, 'partial_scores': "{}".format(partial_scores),
-                              'hardness': hardness, 'exit': False, 'exception': False, 'idx': idx}
-                    interaction_records.append(record)
-                else:
-                    try:
-                        new_hyp, bool_exit = agent.interactive_parsing_session(user, input_item, g_sql, hyp,
-                                                                               bool_verbal=False)
-                        if bool_exit:
-                            count_exit += 1
-                    except Exception:
-                        count_exception += 1
-                        print("Interaction Exception (count = {}) in example {}!".format(count_exception, idx))
-                        bool_exit = False
-                    else:
-                        hyp = new_hyp
-
-                    print("-" * 50 + "\nAfter interaction: \nfinal SQL: {}".format(" ".join(hyp.sql)))
-
-                    exact_score, partial_scores, hardness = _evaluation(example, hyp.sql, raw_example['query'])
-
-                    record = {'nl': " ".join(question), 'true_sql': " ".join(true_sql),
-                              'true_sql_i': "{}".format(g_sql),
-                              'sql': hyp.sql, 'dec_seq': "{}".format(hyp.dec_seq),
-                              'tag_seq': "{}".format(hyp.tag_seq), 'logprob': "{}".format(hyp.logprob),
-                              'q_counter': user.q_counter,
-                              'questioned_indices': user.questioned_pointers,
-                              'questioned_tags': "{}".format(user.questioned_tags),
-                              'feedback_records': "{}".format(user.feedback_records),
-                              'exact_score': exact_score, 'partial_scores': "{}".format(partial_scores),
-                              'hardness': hardness, 'exit': bool_exit, 'exception': False, 'idx': idx}
-                    interaction_records.append(record)
-
-                sequence = hyp.sql
-                probability = np.exp(hyp.logprob)
-
-        original_utt = example.interaction.utterances[0]
-
-        gold_query = original_utt.gold_query_to_use
-        original_gold_query = original_utt.original_gold_query
-
-        gold_table = original_utt.gold_sql_results
-        gold_queries = [q[0] for q in original_utt.all_gold_queries]
-        gold_tables = [q[1] for q in original_utt.all_gold_queries]
-
-        flat_sequence = example.flatten_sequence(sequence)
-
-        if write_results:
-            write_prediction(
-                predictions_file,
-                identifier=example.identifier,
-                input_seq=question,
-                probability=probability,
-                prediction=sequence,
-                flat_prediction=flat_sequence,
-                gold_query=gold_query,
-                flat_gold_queries=gold_queries,
-                gold_tables=gold_tables,
-                index_in_interaction=0,
-                database_username=database_username,
-                database_password=database_password,
-                database_timeout=database_timeout,
-                compute_metrics=compute_metrics)
-
-        update_sums(metrics,
-                    metrics_sums,
-                    sequence,
-                    flat_sequence,
-                    gold_query,
-                    original_gold_query,
-                    database_username=database_username,
-                    database_password=database_password,
-                    database_timeout=database_timeout,
-                    gold_table=gold_table)
-
-        sys.stdout.flush()
-
-    if write_results:
-        predictions_file.close()
-    time_spent = datetime.datetime.now() - starting_time
-
-    # stats
-    q_count = sum([item['q_counter'] for item in interaction_records])
-    print("#questions: {}, #questions per example: {:.3f}.".format(
-        q_count, q_count * 1.0 / len(interaction_records)))
-    print("#exit: {}".format(count_exit))
-    print("#time spent: {}".format(time_spent))
-
-    eval_results = construct_averages(metrics_sums, len(raw_proc_example_pairs))
-    for name, value in eval_results.items():
-        print(name.name + ":\t" + "%.2f" % value)
-
-    exact_acc = np.average([item['exact_score'] for item in interaction_records])
-    print("Exact_acc: {}".format(exact_acc))
-
-    return eval_results, interaction_records
-
-
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length, record_save_path):
 
     database_schema = read_schema(table_schema_path)
@@ -527,12 +322,14 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
 
     if os.path.isfile(record_save_path):
         saved_results = json.load(open(record_save_path, 'r'))
+        pdb.set_trace()
         st = saved_results['st']
         interaction_records = saved_results['interaction_records']
         count_exit = saved_results['count_exit']
         count_exception = saved_results['count_exception']
         time_spent = datetime.timedelta(pytimeparse.parse(saved_results['time_spent']))
 
+    pdb.set_trace()
     for idx, (raw_example, example) in enumerate(raw_proc_example_pairs):
         if idx < st:
             continue
@@ -724,46 +521,19 @@ if __name__ == "__main__":
     # environment setup: user simulator
     error_evaluator = ErrorEvaluator()
 
-    if params.user == "real":
-        def get_table_dict(table_data_path):
-            data = json.load(open(table_data_path))
-            table = dict()
-            for item in data:
-                table[item["db_id"]] = item
-            return table
+    def get_table_dict(table_data_path):
+        data = json.load(open(table_data_path))
+        table = dict()
+        for item in data:
+            table[item["db_id"]] = item
+        return table
 
-        user = RealUser(error_evaluator, get_table_dict(table_schema_path), db_path)
-    elif params.user == "gold_sim":
-        user = GoldUserSim(error_evaluator, bool_structure_question=params.ask_structure)
-    else:
-        user = UserSim(error_evaluator, bool_structure_question=params.ask_structure)
+    user = RealUser(error_evaluator, get_table_dict(table_schema_path), db_path)
 
     # load raw data
     raw_train_examples = json.load(open(os.path.join(params.raw_data_directory, "train_reordered.json")))
     raw_valid_examples = json.load(open(os.path.join(params.raw_data_directory, "dev_reordered.json")))
 
-    # only leave job == "test_w_interaction"
-    if params.user == "real":
-        user_study_indices = json.load(open(os.path.join(
-            params.raw_data_directory, "user_study_indices.json"), "r"))  # random.seed(1234), 100
-        reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-        reorganized_data = [reorganized_data[idx] for idx in user_study_indices]
-
-        real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length, params.output_path)
-
-    else:
-        reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-
-        eval_file = params.output_path[:-5] + "_prediction.json"
-        eval_results, interaction_records = interaction(
-            reorganized_data, user, agent,
-            params.eval_maximum_sql_length,
-            eval_file,
-            metrics=FINAL_EVAL_METRICS,
-            database_username=params.database_username,
-            database_password=params.database_password,
-            database_timeout=params.database_timeout,
-            write_results=True,
-            compute_metrics=params.compute_metrics,
-            bool_interaction=True)
-        json.dump(interaction_records, open(params.output_path, "w"), indent=4)
+    # only leave job == "test_w_interaction" and user == "real"
+    reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
+    real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length, params.output_path)

@@ -357,29 +357,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
                                          bcolors.ENDC + " clear?\nPlease enter y/n: ")
             print("-" * 50)
 
-            # check acc & add to record
-            flat_pred = example.flatten_sequence(hyp.sql)
-            pred_sql_str = ' '.join(flat_pred)
-            postprocessed_sql_str = postprocess_one(pred_sql_str, database_schema[database_id])
-            exact_score, partial_scores, hardness = evaluate_single(
-                postprocessed_sql_str, raw_example['query'], db_path, database_id, agent.world_model.kmaps)
-
-            g_sql.pop("base_vocab") # do not save it
-            record = {'nl': " ".join(question), 'true_sql': " ".join(true_sql),
-                      'true_sql_i': "{}".format(g_sql),
-                      'init_sql': init_hyp.sql,
-                      'sql': hyp.sql, 'dec_seq': "{}".format(hyp.dec_seq),
-                      'tag_seq': "{}".format(hyp.tag_seq), 'logprob': "{}".format(hyp.logprob),
-                      'exit': bool_exit, 'exception': bool_exception, 'q_counter': user.q_counter,
-                      'questioned_indices': user.questioned_pointers,
-                      'questioned_tags': "{}".format(user.questioned_tags),
-                      'per_time_spent': str(per_time_spent), 'bool_unclear': bool_unclear,
-                      'feedback_records': "{}".format(user.feedback_records),
-                      'undo_semantic_units': "{}".format(user.undo_semantic_units),
-                      'exact_score': exact_score, 'partial_scores': "{}".format(partial_scores), 'hardness': hardness,
-                      'idx': idx}
-            interaction_records.append(record)
-
             end_signal = input(bcolors.GREEN + bcolors.BOLD +
                                    "Next? Press 'Enter' to continue, Ctrl+C to quit." + bcolors.ENDC)
             if end_signal != "":
@@ -483,4 +460,4 @@ if __name__ == "__main__":
 
     # only leave job == "test_w_interaction" and user == "real"
     reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
-    real_user_interaction(reorganized_data, user, agent, params.eval_maximum_sql_length)
+    real_user_interaction(reorganized_data[3:], user, agent, params.eval_maximum_sql_length)

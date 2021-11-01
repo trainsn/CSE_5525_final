@@ -240,43 +240,6 @@ def interpret_args():
     return args
 
 
-def evaluation(model, data, eval_fn, valid_pred_path):
-    valid_examples = data.get_all_interactions(data.valid_data)
-    valid_eval_results = eval_fn(valid_examples,
-                                model,
-                                name=valid_pred_path,
-                                metrics=FINAL_EVAL_METRICS,
-                                total_num=atis_data.num_utterances(data.valid_data),
-                                database_username=params.database_username,
-                                database_password=params.database_password,
-                                database_timeout=params.database_timeout,
-                                use_predicted_queries=True,
-                                max_generation_length=params.eval_maximum_sql_length,
-                                write_results=True,
-                                use_gpu=True,
-                                compute_metrics=params.compute_metrics,
-                                bool_progressbar=False)[0]
-    token_accuracy = valid_eval_results[Metrics.TOKEN_ACCURACY]
-    string_accuracy = valid_eval_results[Metrics.STRING_ACCURACY]
-
-    print("## postprocess_eval...")
-
-    database_schema = read_schema(table_schema_path)
-    predictions = read_prediction(valid_pred_path + "_predictions.json")
-    postprocess_db_sqls = postprocess(predictions, database_schema, True)
-
-    postprocess_sqls = []
-    for db in db_list:
-        for postprocess_sql, interaction_id, turn_id in postprocess_db_sqls[db]:
-            postprocess_sqls.append([postprocess_sql])
-
-    eval_acc = evaluate(gold_path, postprocess_sqls, db_path, "match",
-                        kmaps, bool_verbal=False, bool_predict_file=False)['all']['exact']
-    eval_acc = float(eval_acc) * 100  # percentage
-
-    return eval_acc, token_accuracy, string_accuracy
-
-
 def extract_clause_asterisk(g_sql_toks):
     """
     This function extracts {clause keyword: tab_col_item with asterisk (*)}.

@@ -2,31 +2,61 @@
   <div id="app">
       <el-row>
         <el-col :span="10">
-          <div style="height:100px; border:1px solid black">
-          </div>
+          <el-row>
+            <el-col :span="15">
+              <el-input v-model="input_sent" placeholder="Please input your question"></el-input>
+            </el-col>
+            <el-col :span="9">
+              <el-button type="primary" @click="passSent()">Pass</el-button>
+            </el-col>
+          </el-row>
         </el-col>
-         <el-col :span="14">
-          <div style="height:170px; border:1px solid black">
-            <River/>
-          </div>
-         </el-col>
       </el-row>
-       <el-row>
-  <el-col :span="6"><div class="grid-content bg-purple"></div></el-col>
-  <el-col :span="6"><div class="grid-content bg-purple-light"></div></el-col>
-  <el-col :span="6"><div class="grid-content bg-purple"></div></el-col>
-  <el-col :span="6"><div class="grid-content bg-purple-light"></div></el-col>
-</el-row>
+      
 
   </div>
 </template>
 
 <script>
-import River from './components/River.vue'
+// import River from './components/River.vue'
+import * as d3 from 'd3'
+import axios from 'axios'
 export default {
   name: 'App',
   components:{
-    River,
+    // River,
+  },
+  data(){
+      return{
+        input_sent: "",
+      }
+    },
+  created(){
+
+  },
+  methods: {
+    passSent(){
+      const path = 'http://localhost:5000/passSent'
+      const payload = {
+          'sentence': this.input_sent,
+      }
+      axios.post(path, payload)
+      .then((res)=>{
+         console.log(res.data)
+      })
+      .catch((error)=>{
+          console.log(error)
+      })
+    }
+  },
+  watch:{
+
+  },
+  mounted(){
+    
+  },
+  computed:{
+
   }
 }
 </script>

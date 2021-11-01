@@ -275,9 +275,6 @@ def extract_clause_asterisk(g_sql_toks):
 
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
 
-    database_schema = read_schema(table_schema_path)
-
-    interaction_records = []
     st = 0
     time_spent = datetime.timedelta()
     count_exception, count_exit = 0, 0

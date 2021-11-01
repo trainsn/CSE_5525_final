@@ -28,7 +28,6 @@ TRAIN_EVAL_METRICS = [Metrics.LOSS, Metrics.TOKEN_ACCURACY, Metrics.STRING_ACCUR
 FINAL_EVAL_METRICS = [Metrics.STRING_ACCURACY, Metrics.TOKEN_ACCURACY]
 
 
-
 def train_v1(model, data, params):
     """ Trains a model.
 

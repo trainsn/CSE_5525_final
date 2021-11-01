@@ -329,14 +329,11 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
             try:
                 hyp, bool_exit = agent.real_user_interactive_parsing_session(
                     user, input_item, g_sql, init_hyp, bool_verbal=False)
-                bool_exception = False
                 if bool_exit:
                     count_exit += 1
             except Exception:
                 count_exception += 1
                 print("Interaction Exception (count = {}) in example {}!".format(count_exception, idx))
-                bool_exit = False
-                bool_exception = True
                 hyp = init_hyp
 
             print("\nPredicted SQL: {}".format(" ".join(hyp.sql)))
@@ -385,20 +382,17 @@ if __name__ == "__main__":
             if db not in db_list:
                 db_list.append(db)
 
-    if params.job == "online_learning" and params.supervision == 'full_train':
-        model = None    # the model will be renewed immediately in online training
-    else:
-        # model loading
-        model = SchemaInteractionATISModel(
-            params,
-            data.input_vocabulary,
-            data.output_vocabulary,
-            data.output_vocabulary_schema,
-            data.anonymizer if params.anonymize and params.anonymization_scoring else None)
+    # model loading
+    model = SchemaInteractionATISModel(
+        params,
+        data.input_vocabulary,
+        data.output_vocabulary,
+        data.output_vocabulary_schema,
+        data.anonymizer if params.anonymize and params.anonymization_scoring else None)
 
-        model.load(os.path.join(params.logdir, "model_best.pt"))
-        model = model.to(device)
-        model.eval()
+    model.load(os.path.join(params.logdir, "model_best.pt"))
+    model = model.to(device)
+    model.eval()
 
     print("ask_structure: {}".format(params.ask_structure))
     question_generator = QuestionGenerator(bool_structure_question=params.ask_structure)
@@ -451,8 +445,6 @@ if __name__ == "__main__":
 
     user = RealUser(error_evaluator, get_table_dict(table_schema_path), db_path)
 
-    # load raw data
-    raw_train_examples = json.load(open(os.path.join(params.raw_data_directory, "train_reordered.json")))
     raw_valid_examples = json.load(open(os.path.join(params.raw_data_directory, "dev_reordered.json")))
 
     # only leave job == "test_w_interaction" and user == "real"

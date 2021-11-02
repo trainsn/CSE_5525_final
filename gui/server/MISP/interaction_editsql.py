@@ -40,11 +40,6 @@ import pdb
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-VALID_EVAL_METRICS = [Metrics.LOSS, Metrics.TOKEN_ACCURACY, Metrics.STRING_ACCURACY]
-TRAIN_EVAL_METRICS = [Metrics.LOSS, Metrics.TOKEN_ACCURACY, Metrics.STRING_ACCURACY]
-FINAL_EVAL_METRICS = [Metrics.STRING_ACCURACY, Metrics.TOKEN_ACCURACY]
-
-
 def interpret_args():
     """ Interprets the command line arguments, and returns a dictionary. """
     parser = argparse.ArgumentParser()
@@ -240,50 +235,9 @@ def interpret_args():
     return args
 
 
-def extract_clause_asterisk(g_sql_toks):
-    """
-    This function extracts {clause keyword: tab_col_item with asterisk (*)}.
-    Keywords include: SELECT/HAV/ORDER_AGG_v2.
-    A tab_col_item lookds like "*" or "tab_name.*".
-
-    The output will be used to simulate user evaluation and selections.
-    The motivation is that the structured "g_sql" does not contain tab_name for *, so the simulator cannot decide the
-    right decision precisely.
-    :param g_sql_toks: the preprocessed gold sql tokens from EditSQL.
-    :return: A dict of {clause keyword: tab_col_item with asterisk (*)}.
-    """
-    kw2item = defaultdict(list)
-
-    keyword = None
-    for tok in g_sql_toks:
-        if tok in {'select', 'having', 'order_by', 'where', 'group_by'}:
-            keyword = tok
-        elif keyword in {'select', 'having', 'order_by'} and (tok == "*" or re.findall("\.\*", tok)):
-            kw2item[keyword].append(tok)
-
-    kw2item = dict(kw2item)
-    for kw, item in kw2item.items():
-        try:
-            assert len(item) <= 1
-        except:
-            print("\nException in clause asterisk extraction:\ng_sql_toks: {}\nkw: {}, item: {}\n".format(
-                g_sql_toks, kw, item))
-        kw2item[kw] = item[0]
-
-    return kw2item
-
-
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
 
-    st = 0
-    time_spent = datetime.timedelta()
-    count_exception, count_exit = 0, 0
-
-    pdb.set_trace()
-    for idx, (raw_example, example) in enumerate(raw_proc_example_pairs):
-        if idx < st:
-            continue
-
+    for idx, example in enumerate(raw_proc_example_pairs):
         with torch.no_grad():
             input_item = agent.world_model.semparser.spider_single_turn_encoding(
                 example, max_generation_length)
@@ -323,16 +277,12 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
             try:
                 hyp, bool_exit = agent.real_user_interactive_parsing_session(
                     user, input_item, init_hyp, bool_verbal=False)
-                if bool_exit:
-                    count_exit += 1
             except Exception:
-                count_exception += 1
-                print("Interaction Exception (count = {}) in example {}!".format(count_exception, idx))
+                print("Interaction Exception in example {}!".format(idx))
                 hyp = init_hyp
 
             print("\nPredicted SQL: {}".format(" ".join(hyp.sql)))
             per_time_spent = datetime.datetime.now() - start_time
-            time_spent += per_time_spent
             print("Your time spent: {}".format(per_time_spent))
 
             # post survey
@@ -349,11 +299,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
                                    "Next? Press 'Enter' to continue, Ctrl+C to quit." + bcolors.ENDC)
             if end_signal != "":
                 return
-
-    print(bcolors.RED + bcolors.BOLD + "Congratulations! You have completed all your task!" + bcolors.ENDC)
-    print("Your average time spent: {}".format((time_spent / len(raw_proc_example_pairs))))
-    print("You exited %d times." % count_exit)
-    print("%d exceptions occurred." % count_exception)
 
 
 if __name__ == "__main__":
@@ -439,8 +384,6 @@ if __name__ == "__main__":
 
     user = RealUser(error_evaluator, get_table_dict(table_schema_path), db_path)
 
-    raw_valid_examples = json.load(open(os.path.join(params.raw_data_directory, "dev_reordered.json")))
-
     # only leave job == "test_w_interaction" and user == "real"
-    reorganized_data = list(zip(raw_valid_examples, data.get_all_interactions(data.valid_data)))
+    reorganized_data = data.get_all_interactions(data.valid_data)
     real_user_interaction(reorganized_data[3:], user, agent, params.eval_maximum_sql_length)

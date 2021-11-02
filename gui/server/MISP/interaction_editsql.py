@@ -29,7 +29,7 @@ from EditSQL.model_util import Metrics, get_progressbar, write_prediction, updat
     evaluate_interaction_sample, evaluate_utterance_sample, train_epoch_with_interactions, train_epoch_with_utterances
 from EditSQL.world_model import WorldModel
 from EditSQL.error_detector import ErrorDetectorProbability, ErrorDetectorBayesDropout, ErrorDetectorSim
-from EditSQL.environment import ErrorEvaluator, UserSim, RealUser, GoldUserSim
+from EditSQL.environment import ErrorEvaluator, UserSim, RealUser
 from EditSQL.agent import Agent
 from EditSQL.question_gen import QuestionGenerator
 from MISP_SQL.utils import SELECT_AGG_v2, WHERE_COL, WHERE_OP, WHERE_ROOT_TERM, GROUP_COL, HAV_AGG_v2, \

@@ -11,7 +11,6 @@ class DatasetSplit:
         examples (list of Interaction): Stores the examples in the split.
     """
     def __init__(self, processed_filename, raw_filename, load_function):
-        pdb.set_trace()
         if os.path.exists(processed_filename):
             print("Loading preprocessed data from " + processed_filename)
             with open(processed_filename, 'rb') as infile:

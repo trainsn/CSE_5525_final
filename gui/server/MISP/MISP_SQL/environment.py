@@ -146,44 +146,6 @@ class UserSim:
         return selections
 
 
-class GoldUserSim(UserSim):
-    """
-    This is the class for "gold" user simulator.
-    Different to UserSim, when the gold user is requested for a selection, she gives a gold label (if exists).
-    """
-    def __init__(self, error_evaluator):
-        """
-        Constructor of GoldUserSim.
-        :param error_evaluator: An instance of ErrorEvaluator.
-        """
-        UserSim.__init__(self, error_evaluator)
-        self.user_type = "gold_sim"
-        self.true_semantic_units = None
-
-    def update_pred(self, tag_seq, dec_seq):
-        """
-        Update the user with the generated SQL query.
-        :param tag_seq: a sequence of semantic units (for the generated SQL query).
-        :return:
-        """
-        self.tag_seq = tag_seq
-        self.dec_seq = dec_seq
-        _, self.eval_outputs, self.true_semantic_units = self.error_evaluator.compare(
-            self.ground_truth, 0, self.tag_seq, bool_return_true_semantic_units=True)
-
-    def get_gold_selection(self, pointer):
-        """
-        Generate gold user selections.
-        :param pointer: the pointer to the questioned semantic unit.
-        :return: gold_semantic_units (a list of gold semantic units),
-                 gold_dec_items (a list of dec_items for each gold semantic unit),
-                 sel_none_of_above (an integer, the option index referring to "none of the above"),
-                 selections (a list of indices that gold user selects).
-                 These lists will be used in feedback incorporation.
-        """
-        raise NotImplementedError
-
-
 class RealUser(UserSim):
     """
     This is the class for real users (used in user study).

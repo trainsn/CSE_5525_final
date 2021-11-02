@@ -142,7 +142,7 @@ class Agent:
         self.world_model.clear()
 
         # state tracker
-        tracker = [] # a list of (hypothesis, starting position in tag_seq)
+        tracker = []    # a list of (hypothesis, starting position in tag_seq)
 
         # error detection
         start_pos = 0

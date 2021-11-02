@@ -1,5 +1,6 @@
 """ Utility functions for loading and processing ATIS data."""
 import os
+import pdb
 import random
 import json
 
@@ -42,105 +43,63 @@ class ATISDataset():
             """ Collapses a list of list into a single list."""
             return [s for i in the_list for s in i]
 
-        if 'atis' not in params.data_directory:
-            self.train_data = ds.DatasetSplit(
-                os.path.join(params.data_directory, params.processed_train_filename),
-                params.raw_train_filename,
-                int_load_function)
-            self.valid_data = ds.DatasetSplit(
-                os.path.join(params.data_directory, params.processed_validation_filename),
-                params.raw_validation_filename,
-                int_load_function)
+        self.train_data = ds.DatasetSplit(
+            os.path.join(params.data_directory, params.processed_train_filename),
+            params.raw_train_filename,
+            int_load_function)
+        self.valid_data = ds.DatasetSplit(
+            os.path.join(params.data_directory, params.processed_validation_filename),
+            params.raw_validation_filename,
+            int_load_function)
 
-            train_input_seqs = collapse_list(self.train_data.get_ex_properties(lambda i: i.input_seqs()))
-            valid_input_seqs = collapse_list(self.valid_data.get_ex_properties(lambda i: i.input_seqs()))
+        train_input_seqs = collapse_list(self.train_data.get_ex_properties(lambda i: i.input_seqs()))
+        valid_input_seqs = collapse_list(self.valid_data.get_ex_properties(lambda i: i.input_seqs()))
 
-            all_input_seqs = train_input_seqs + valid_input_seqs
+        all_input_seqs = train_input_seqs + valid_input_seqs
 
-            self.input_vocabulary = ATISVocabulary(
-                all_input_seqs,
-                os.path.join(params.data_directory, params.input_vocabulary_filename),
-                params,
-                is_input='input',
-                anonymizer=self.anonymizer if params.anonymization_scoring else None)
+        self.input_vocabulary = ATISVocabulary(
+            all_input_seqs,
+            os.path.join(params.data_directory, params.input_vocabulary_filename),
+            params,
+            is_input='input',
+            anonymizer=self.anonymizer if params.anonymization_scoring else None)
 
-            self.output_vocabulary_schema = ATISVocabulary(
-                column_names_embedder_input,
-                os.path.join(params.data_directory, 'schema_'+params.output_vocabulary_filename),
-                params,
-                is_input='schema',
-                anonymizer=self.anonymizer if params.anonymization_scoring else None)
+        self.output_vocabulary_schema = ATISVocabulary(
+            column_names_embedder_input,
+            os.path.join(params.data_directory, 'schema_' + params.output_vocabulary_filename),
+            params,
+            is_input='schema',
+            anonymizer=self.anonymizer if params.anonymization_scoring else None)
 
-            train_output_seqs = collapse_list(self.train_data.get_ex_properties(lambda i: i.output_seqs()))
-            valid_output_seqs = collapse_list(self.valid_data.get_ex_properties(lambda i: i.output_seqs()))
-            all_output_seqs = train_output_seqs + valid_output_seqs
+        train_output_seqs = collapse_list(self.train_data.get_ex_properties(lambda i: i.output_seqs()))
+        valid_output_seqs = collapse_list(self.valid_data.get_ex_properties(lambda i: i.output_seqs()))
+        all_output_seqs = train_output_seqs + valid_output_seqs
 
-            sql_keywords = ['.', 't1', 't2', '=', 'select', 'as', 'join', 'on', ')', '(', 'where', 't3', 'by', ',', 'group', 'distinct', 't4', 'and', 'limit', 'desc', '>', 'avg', 'having', 'max', 'in', '<', 'sum', 't5', 'intersect', 'not', 'min', 'except', 'or', 'asc', 'like', '!', 'union', 'between', 't6', '-', 't7', '+', '/']
-            sql_keywords += ['count', 'from', 'value', 'order']
-            sql_keywords += ['group_by', 'order_by', 'limit_value', '!=']
+        sql_keywords = ['.', 't1', 't2', '=', 'select', 'as', 'join', 'on', ')', '(', 'where', 't3', 'by', ',', 'group', 'distinct', 't4', 'and', 'limit', 'desc', '>', 'avg', 'having', 'max', 'in',
+                        '<',
+                        'sum', 't5', 'intersect', 'not', 'min', 'except', 'or', 'asc', 'like', '!', 'union', 'between', 't6', '-', 't7', '+', '/']
+        sql_keywords += ['count', 'from', 'value', 'order']
+        sql_keywords += ['group_by', 'order_by', 'limit_value', '!=']
 
-            # skip column_names_surface_form but keep sql_keywords
-            skip_tokens = list(set(column_names_surface_form) - set(sql_keywords))
+        # skip column_names_surface_form but keep sql_keywords
+        skip_tokens = list(set(column_names_surface_form) - set(sql_keywords))
 
-            if params.data_directory == 'processed_data_sparc_removefrom_test':
-              all_output_seqs = []
-              out_vocab_ordered = ['select', 'value', ')', '(', 'where', '=', ',', 'count', 'group_by', 'order_by', 'limit_value', 'desc', '>', 'distinct', 'avg', 'and', 'having', '<', 'in', 'max', 'sum', 'asc', 'like', 'not', 'or', 'min', 'intersect', 'except', '!=', 'union', 'between', '-', '+']
-              for i in range(len(out_vocab_ordered)):
-                all_output_seqs.append(out_vocab_ordered[:i+1])
+        if params.data_directory == 'processed_data_sparc_removefrom_test':
+            all_output_seqs = []
+            out_vocab_ordered = ['select', 'value', ')', '(', 'where', '=', ',', 'count', 'group_by', 'order_by', 'limit_value', 'desc', '>', 'distinct', 'avg', 'and', 'having', '<', 'in', 'max',
+                                 'sum',
+                                 'asc', 'like', 'not', 'or', 'min', 'intersect', 'except', '!=', 'union', 'between', '-', '+']
+            for i in range(len(out_vocab_ordered)):
+                all_output_seqs.append(out_vocab_ordered[:i + 1])
 
-            self.output_vocabulary = ATISVocabulary(
-                all_output_seqs,
-                os.path.join(params.data_directory, params.output_vocabulary_filename),
-                params,
-                is_input='output',
-                anonymizer=self.anonymizer if params.anonymization_scoring else None,
-                skip=skip_tokens)
-        else:
-            self.train_data = ds.DatasetSplit(
-                os.path.join(params.data_directory, params.processed_train_filename),
-                params.raw_train_filename,
-                int_load_function)
-            if params.train:
-                self.valid_data = ds.DatasetSplit(
-                    os.path.join(params.data_directory, params.processed_validation_filename),
-                    params.raw_validation_filename,
-                    int_load_function)
-            if params.evaluate or params.attention:
-                self.dev_data = ds.DatasetSplit(
-                    os.path.join(params.data_directory, params.processed_dev_filename),
-                    params.raw_dev_filename,
-                    int_load_function)
-                if params.enable_testing:
-                    self.test_data = ds.DatasetSplit(
-                        os.path.join(params.data_directory, params.processed_test_filename),
-                        params.raw_test_filename,
-                        int_load_function)
+        self.output_vocabulary = ATISVocabulary(
+            all_output_seqs,
+            os.path.join(params.data_directory, params.output_vocabulary_filename),
+            params,
+            is_input='output',
+            anonymizer=self.anonymizer if params.anonymization_scoring else None,
+            skip=skip_tokens)
 
-            train_input_seqs = []
-            train_input_seqs = collapse_list(
-                self.train_data.get_ex_properties(
-                    lambda i: i.input_seqs()))
-
-            self.input_vocabulary = ATISVocabulary(
-                train_input_seqs,
-                os.path.join(params.data_directory, params.input_vocabulary_filename),
-                params,
-                is_input='input',
-                min_occur=2,
-                anonymizer=self.anonymizer if params.anonymization_scoring else None)
-
-            train_output_seqs = collapse_list(
-                self.train_data.get_ex_properties(
-                    lambda i: i.output_seqs()))
-
-            self.output_vocabulary = ATISVocabulary(
-                train_output_seqs,
-                os.path.join(params.data_directory, params.output_vocabulary_filename),
-                params,
-                is_input='output',
-                anonymizer=self.anonymizer if params.anonymization_scoring else None)
-
-            self.output_vocabulary_schema = None
 
     def read_database_schema_simple(self, database_schema_filename):
         with open(database_schema_filename, "r") as f:

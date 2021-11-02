@@ -236,9 +236,9 @@ def interpret_args():
 
 
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
-
     for idx, example in enumerate(raw_proc_example_pairs):
         with torch.no_grad():
+            pdb.set_trace()
             input_item = agent.world_model.semparser.spider_single_turn_encoding(
                 example, max_generation_length)
 
@@ -305,29 +305,18 @@ if __name__ == "__main__":
     params = interpret_args()
 
     # Prepare the dataset into the proper form.
-    data = atis_data.ATISDataset(params)
+    atisdata = atis_data.ATISDataset(params)
 
     table_schema_path = os.path.join(params.raw_data_directory, "tables.json")
-    gold_path = os.path.join(params.raw_data_directory, "dev_gold.sql")
     db_path = os.path.join(os.path.dirname(params.raw_data_directory), "database/")
-
-    db_list = []
-    with open(gold_path) as f:
-        for line in f:
-            line_split = line.strip().split('\t')
-            if len(line_split) != 2:
-                continue
-            db = line.strip().split('\t')[1]
-            if db not in db_list:
-                db_list.append(db)
 
     # model loading
     model = SchemaInteractionATISModel(
         params,
-        data.input_vocabulary,
-        data.output_vocabulary,
-        data.output_vocabulary_schema,
-        data.anonymizer if params.anonymize and params.anonymization_scoring else None)
+        atisdata.input_vocabulary,
+        atisdata.output_vocabulary,
+        atisdata.output_vocabulary_schema,
+        None)
 
     model.load(os.path.join(params.logdir, "model_best.pt"))
     model = model.to(device)
@@ -385,5 +374,5 @@ if __name__ == "__main__":
     user = RealUser(error_evaluator, get_table_dict(table_schema_path), db_path)
 
     # only leave job == "test_w_interaction" and user == "real"
-    reorganized_data = data.get_all_interactions(data.valid_data)
+    reorganized_data = atisdata.get_all_interactions(atisdata.valid_data)
     real_user_interaction(reorganized_data[3:], user, agent, params.eval_maximum_sql_length)

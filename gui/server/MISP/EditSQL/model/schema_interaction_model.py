@@ -1,4 +1,5 @@
 """ Class for the Sequence to sequence model for ATIS."""
+import pdb
 
 import torch
 import torch.nn.functional as F
@@ -693,6 +694,7 @@ class SchemaInteractionATISModel(ATISModel):
         return predictions
 
     def spider_single_turn_encoding(self, interaction, max_generation_length):
+        pdb.set_trace()
         input_hidden_states = []
         input_sequences = []
 

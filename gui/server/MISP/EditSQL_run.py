@@ -88,6 +88,7 @@ def evaluate(model, data, params, last_save_file, split, full_name=None):
         full_name = os.path.join(params.logdir, filename) + params.results_note
 
     if params.interaction_level or params.use_predicted_queries:
+        pdb.set_trace()
         examples = data.get_all_interactions(split)
         if params.interaction_level:
             evaluate_interaction_sample(
@@ -102,7 +103,6 @@ def evaluate(model, data, params, last_save_file, split, full_name=None):
                 use_predicted_queries=params.use_predicted_queries,
                 max_generation_length=params.eval_maximum_sql_length,
                 write_results=True,
-                use_gpu=True,
                 compute_metrics=params.compute_metrics)
         else:
             evaluate_using_predicted_queries(
@@ -131,7 +131,7 @@ def evaluate(model, data, params, last_save_file, split, full_name=None):
 
     database_schema = read_schema(table_schema_path)
     predictions = read_prediction(full_name + "_predictions.json")
-    postprocess_db_sqls = postprocess(predictions, database_schema, True) # TODO: add token/string acc?
+    postprocess_db_sqls = postprocess(predictions, database_schema, True)   # TODO: add token/string acc?
 
     postprocess_sqls = []
     for db in db_list:

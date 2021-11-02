@@ -1,5 +1,5 @@
 """Basic model training and evaluation functions."""
-
+import pdb
 from enum import Enum
 
 import random
@@ -384,7 +384,6 @@ def evaluate_interaction_sample(sample,
                                 database_timeout=0,
                                 use_predicted_queries=False,
                                 write_results=False,
-                                use_gpu=False,
                                 compute_metrics=False,
                                 bool_progressbar=True):
     """ Evaluates a sample of interactions. """
@@ -402,10 +401,9 @@ def evaluate_interaction_sample(sample,
     #     "data/cpu_full_interactions.txt").readlines()]
     predictions = []
 
-    use_gpu = not ("--no_gpus" in sys.argv or "--no_gpus=1" in sys.argv)
-
     model.eval()
 
+    pdb.set_trace()
     for i, interaction in enumerate(sample):
         # if use_gpu and interaction.identifier in ignore_with_gpu:
         #     continue

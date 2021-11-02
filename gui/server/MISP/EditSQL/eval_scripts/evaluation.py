@@ -27,6 +27,8 @@ import argparse
 
 from .process_sql import tokenize, get_schema, get_tables_with_alias, Schema, get_sql
 
+import pdb
+
 # Flag to disable value evaluation
 DISABLE_VALUE = True
 # Flag to disable distinct in select evaluation
@@ -480,6 +482,7 @@ def print_scores(scores, etype):
 
 
 def evaluate(gold, predict, db_dir, etype, kmaps, bool_verbal=True, bool_predict_file=True):
+    pdb.set_trace()
     with open(gold) as f:
         glist = [l.strip().split('\t') for l in f.readlines() if len(l.strip()) > 0]
 

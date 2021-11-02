@@ -489,7 +489,7 @@ class SchemaInteractionATISModel(ATISModel):
         """ Predicts an interaction, using the predicted queries to get snippets."""
         # assert self.params.discourse_level_lstm
 
-        syntax_restrict=False
+        syntax_restrict = False
 
         predictions = []
 

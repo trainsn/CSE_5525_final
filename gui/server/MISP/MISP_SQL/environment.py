@@ -39,26 +39,17 @@ class UserSim:
         self.patience = 3
         self.error_evaluator = error_evaluator
 
-        self.ground_truth = None
         self.tag_seq = None
         self.dec_seq = None
         self.eval_outputs = None # evaluation output (right/wrong)
         self.true_selections = None # the true decisions used to simulate user selection
 
         # interaction record
-        self.q_counter = 0 # number of questions
+        self.q_counter = 0  # number of questions
         self.questioned_pointers = []
         self.questioned_tags = []
         self.option_selections = []
         self.feedback_records = []
-
-    def update_truth(self, ground_truth):
-        """
-        Update the user with the ground truth in this session. This will be used to simulate user feedback.
-        :param ground_truth: the ground truth SQL query.
-        :return:
-        """
-        self.ground_truth = ground_truth
 
     def update_pred(self, tag_seq, dec_seq):
         """
@@ -69,8 +60,6 @@ class UserSim:
         """
         self.tag_seq = tag_seq
         self.dec_seq = dec_seq
-        _, self.eval_outputs, self.true_selections = self.error_evaluator.compare(
-            self.ground_truth, 0, self.tag_seq, bool_return_true_selections=True)
 
     def record_user_feedback(self, context, user_answer, bool_qa=False):
         """
@@ -84,7 +73,7 @@ class UserSim:
 
         if bool_qa:
             self.questioned_tags.append((context, user_answer))
-            self.q_counter += 1 # number of questions + 1
+            self.q_counter += 1     # number of questions + 1
 
     def clear_counter(self):
         """

@@ -289,12 +289,6 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
                 example, max_generation_length)
 
             question = example.interaction.utterances[0].original_input_seq
-            true_sql = example.interaction.utterances[0].original_gold_query
-
-            g_sql = raw_example['sql']
-            g_sql["extracted_clause_asterisk"] = extract_clause_asterisk(true_sql)
-            g_sql["column_names_surface_form_to_id"] = input_item[-1].column_names_surface_form_to_id
-            g_sql["base_vocab"] = agent.world_model.vocab
 
             assert len(example.identifier.split('/')) == 2
             database_id, interaction_id = example.identifier.split('/')
@@ -328,7 +322,7 @@ def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_le
 
             try:
                 hyp, bool_exit = agent.real_user_interactive_parsing_session(
-                    user, input_item, g_sql, init_hyp, bool_verbal=False)
+                    user, input_item, init_hyp, bool_verbal=False)
                 if bool_exit:
                     count_exit += 1
             except Exception:

@@ -238,23 +238,25 @@ def interpret_args():
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
     for idx, example in enumerate(raw_proc_example_pairs):
         with torch.no_grad():
-            input_item = agent.world_model.semparser.spider_single_turn_encoding(
-                example, max_generation_length)
-
-            question = example.interaction.utterances[0].original_input_seq
-
             assert len(example.identifier.split('/')) == 2
             database_id, interaction_id = example.identifier.split('/')
 
             os.system('clear')  # clear screen
-            print_header(len(raw_proc_example_pairs) - idx, bool_table_color=True)  # interface header
+            print_header(bool_table_color=True)  # interface header
 
             print(bcolors.BOLD + "Suppose you are given some tables with the following " +
                   bcolors.BLUE + "headers" + bcolors.ENDC +
                   bcolors.BOLD + ":" + bcolors.ENDC)
             user.show_table(database_id)  # print table
 
-            print(bcolors.BOLD + "\nAnd you want to answer the following " +
+            question = input(bcolors.BOLD + "Please type the " +
+                                 bcolors.PINK + "question" + bcolors.ENDC +
+                                 bcolors.BOLD + " you want to answer." + bcolors.ENDC + "\n").split()
+            # question = example.interaction.utterances[0].original_input_seq
+            input_item = agent.world_model.semparser.spider_single_turn_encoding(
+                example, max_generation_length, question)
+
+            print(bcolors.BOLD + "\nSeems you want to answer the following " +
                   bcolors.PINK + "question" + bcolors.ENDC +
                   bcolors.BOLD + " based on this table:" + bcolors.ENDC)
             print(bcolors.PINK + bcolors.BOLD + " ".join(question) + bcolors.ENDC + "\n")

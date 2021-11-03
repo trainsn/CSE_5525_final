@@ -19,12 +19,7 @@ def print_main(sent):
     print(bcolors.PINK + bcolors.BOLD + sent + bcolors.ENDC)
 
 
-def print_header(remaining_size, bool_table_color=False):
-    task_notification = " Interactive Database Query "
-    remain_notification = " Remaining: %d " % (remaining_size)
-    print("=" * 50)
-    print(bcolors.BOLD + task_notification + bcolors.ENDC)
-    print(bcolors.BOLD + remain_notification + bcolors.ENDC)
+def print_header(bool_table_color=False):
     print(bcolors.BOLD + "\n Tip: Words referring to table headers/attributes are marked in " +
           bcolors.BLUE + "this color" + bcolors.ENDC + ".")
     if bool_table_color:

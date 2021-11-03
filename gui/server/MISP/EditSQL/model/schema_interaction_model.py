@@ -693,8 +693,7 @@ class SchemaInteractionATISModel(ATISModel):
 
         return predictions
 
-    def spider_single_turn_encoding(self, interaction, max_generation_length):
-        pdb.set_trace()
+    def spider_single_turn_encoding(self, interaction, max_generation_length, input_sequence):
         input_hidden_states = []
         input_sequences = []
 
@@ -706,9 +705,6 @@ class SchemaInteractionATISModel(ATISModel):
         input_schema = interaction.get_schema()
 
         interaction.start_interaction()
-        utterance = interaction.next_utterance()
-
-        input_sequence = utterance.input_sequence()
 
         final_utterance_state, utterance_states, schema_states = self.get_bert_encoding(input_sequence,
                                                                                         input_schema,

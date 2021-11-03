@@ -698,73 +698,31 @@ class SchemaInteractionATISModel(ATISModel):
         input_hidden_states = []
         input_sequences = []
 
-        final_utterance_states_c = []
-        final_utterance_states_h = []
-
-        previous_query_states = []
-        previous_queries = []
-
         discourse_state = None
         if self.params.discourse_level_lstm:
             discourse_state, discourse_lstm_states = self._initialize_discourse_states()
 
         # Schema and schema embeddings
         input_schema = interaction.get_schema()
-        schema_states = []
-
-        if input_schema and not self.params.use_bert:
-            schema_states = self.encode_schema_bow_simple(input_schema)
 
         interaction.start_interaction()
         utterance = interaction.next_utterance()
 
-        available_snippets = utterance.snippets()
-        previous_query = utterance.previous_query()
-
         input_sequence = utterance.input_sequence()
 
-        if not self.params.use_bert:
-            if self.params.discourse_level_lstm:
-                utterance_token_embedder = lambda token: torch.cat([self.input_embedder(token), discourse_state], dim=0)
-            else:
-                utterance_token_embedder = self.input_embedder
-            final_utterance_state, utterance_states = self.utterance_encoder(
-                input_sequence,
-                utterance_token_embedder)
-        else:
-            final_utterance_state, utterance_states, schema_states = self.get_bert_encoding(input_sequence,
-                                                                                            input_schema,
-                                                                                            discourse_state,
-                                                                                            dropout=False)
+        final_utterance_state, utterance_states, schema_states = self.get_bert_encoding(input_sequence,
+                                                                                        input_schema,
+                                                                                        discourse_state,
+                                                                                        dropout=False)
 
         input_hidden_states.extend(utterance_states)
         input_sequences.append(input_sequence)
 
         num_utterances_to_keep = min(self.params.maximum_utterances, len(input_sequences))
 
-        if self.params.discourse_level_lstm:
-            _, discourse_state, discourse_lstm_states = torch_utils.forward_one_multilayer(self.discourse_lstms,
-                                                                                           final_utterance_state[1][0],
-                                                                                           discourse_lstm_states)
-
-        if self.params.use_utterance_attention:
-            final_utterance_states_c, final_utterance_states_h, final_utterance_state = self.get_utterance_attention(
-                final_utterance_states_c, final_utterance_states_h, final_utterance_state, num_utterances_to_keep)
-
-        if self.params.state_positional_embeddings:
-            utterance_states, flat_sequence = self._add_positional_embeddings(input_hidden_states, input_sequences)
-        else:
-            flat_sequence = []
-            for utt in input_sequences[-num_utterances_to_keep:]:
-                flat_sequence.extend(utt)
-
-        snippets = None
-        if self.params.use_snippets:
-            snippets = self._encode_snippets(previous_query, available_snippets, input_schema)
-
-        if self.params.use_previous_query and len(previous_query) > 0:
-            previous_queries, previous_query_states = self.get_previous_queries(previous_queries, previous_query_states,
-                                                                                previous_query, input_schema)
+        flat_sequence = []
+        for utt in input_sequences[-num_utterances_to_keep:]:
+            flat_sequence.extend(utt)
 
         # from predict_turn
         if self.params.use_encoder_attention:
@@ -790,4 +748,4 @@ class SchemaInteractionATISModel(ATISModel):
                 _, input_hidden_states = self.utterance_encoder_2(input_hidden_states, lambda x: x, dropout_amount=self.dropout)
 
         return (final_utterance_state, input_hidden_states, schema_states, max_generation_length,
-                snippets, flat_sequence, previous_queries, previous_query_states, input_schema)
+                None, flat_sequence, [], [], input_schema)

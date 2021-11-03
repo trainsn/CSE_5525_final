@@ -238,7 +238,6 @@ def interpret_args():
 def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
     for idx, example in enumerate(raw_proc_example_pairs):
         with torch.no_grad():
-            pdb.set_trace()
             input_item = agent.world_model.semparser.spider_single_turn_encoding(
                 example, max_generation_length)
 

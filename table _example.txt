@@ -1,0 +1,30 @@
+Table 1 Ref_Template_Types
+['Template_Type_Code', 'Template_Type_Description']
+
+('PPT', 'Presentation')
+('CV', 'CV')
+('AD', 'Advertisement')
+
+
+Table 2 Templates
+['Template_ID', 'Version_Number', 'Template_Type_Code', 'Date_Effective_From', 'Date_Effective_To', 'Template_Details']
+
+(0, 5, 'PP', '2005-11-12 07:09:48', '2008-01-05 14:19:28', '')
+(1, 9, 'PP', '2010-09-24 01:15:11', '1999-07-08 03:31:04', '')
+(4, 4, 'BK', '2002-03-02 14:39:49', '2001-04-18 09:29:52', '')
+
+
+Table 3 Documents
+['Document_ID', 'Template_ID', 'Document_Name', 'Document_Description', 'Other_Details']
+
+(0, 7, 'Introduction of OS', 'n', None)
+(1, 25, 'Understanding DB', 'y', None)
+(3, 6, 'Summer Show', 'u', None)
+
+
+Table 4 Paragraphs
+['Paragraph_ID', 'Document_ID', 'Paragraph_Text', 'Other_Details']
+
+(7, 2394, 'Korea', None)
+(9, 3, 'Somalia', None)
+(65, 50123, 'Palestinian Territory', None)

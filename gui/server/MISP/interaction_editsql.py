@@ -235,75 +235,67 @@ def interpret_args():
     return args
 
 
-def real_user_interaction(raw_proc_example_pairs, user, agent, max_generation_length):
-    for idx, example in enumerate(raw_proc_example_pairs):
-        with torch.no_grad():
-            assert len(example.identifier.split('/')) == 2
-            database_id, interaction_id = example.identifier.split('/')
+def real_user_interaction(example, user, agent, max_generation_length):
+    with torch.no_grad():
+        assert len(example.identifier.split('/')) == 2
+        database_id, interaction_id = example.identifier.split('/')
 
-            os.system('clear')  # clear screen
-            print_header(bool_table_color=True)  # interface header
+        os.system('clear')  # clear screen
+        print_header(bool_table_color=True)  # interface header
 
-            print(bcolors.BOLD + "Suppose you are given some tables with the following " +
-                  bcolors.BLUE + "headers" + bcolors.ENDC +
-                  bcolors.BOLD + ":" + bcolors.ENDC)
-            user.show_table(database_id)  # print table
+        print(bcolors.BOLD + "Suppose you are given some tables with the following " +
+              bcolors.BLUE + "headers" + bcolors.ENDC +
+              bcolors.BOLD + ":" + bcolors.ENDC)
+        user.show_table(database_id)  # print table
 
-            question = input(bcolors.BOLD + "Please type the " +
-                                 bcolors.PINK + "question" + bcolors.ENDC +
-                                 bcolors.BOLD + " you want to answer." + bcolors.ENDC + "\n").split()
-            # question = example.interaction.utterances[0].original_input_seq
-            input_item = agent.world_model.semparser.spider_single_turn_encoding(
-                example, max_generation_length, question)
+        question = input(bcolors.BOLD + "Please type the " +
+                         bcolors.PINK + "question" + bcolors.ENDC +
+                         bcolors.BOLD + " you want to answer." + bcolors.ENDC + "\n").split()
+        # question = example.interaction.utterances[0].original_input_seq
+        input_item = agent.world_model.semparser.spider_single_turn_encoding(
+            example, max_generation_length, question)
 
-            print(bcolors.BOLD + "\nSeems you want to answer the following " +
-                  bcolors.PINK + "question" + bcolors.ENDC +
-                  bcolors.BOLD + " based on this table:" + bcolors.ENDC)
-            print(bcolors.PINK + bcolors.BOLD + " ".join(question) + bcolors.ENDC + "\n")
-            print(bcolors.BOLD + "To help you get the answer automatically,"
-                                 " the system has the following yes/no questions for you."
-                                 "\n(When no question prompts, please " +
-                  bcolors.GREEN + "continue" + bcolors.ENDC +
-                  bcolors.BOLD + " to the next case)\n" + bcolors.ENDC)
+        print(bcolors.BOLD + "\nSeems you want to answer the following " +
+              bcolors.PINK + "question" + bcolors.ENDC +
+              bcolors.BOLD + " based on this table:" + bcolors.ENDC)
+        print(bcolors.PINK + bcolors.BOLD + " ".join(question) + bcolors.ENDC + "\n")
+        print(bcolors.BOLD + "To help you get the answer automatically,"
+                             " the system has the following yes/no questions for you."
+                             "\n(When no question prompts, please " +
+              bcolors.GREEN + "continue" + bcolors.ENDC +
+              bcolors.BOLD + " to the next case)\n" + bcolors.ENDC)
 
+        start_signal = input(bcolors.BOLD + "Ready? please press '" +
+                             bcolors.GREEN + "Enter" + bcolors.ENDC + bcolors.BOLD + "' to start!" + bcolors.ENDC)
+        while start_signal != "":
             start_signal = input(bcolors.BOLD + "Ready? please press '" +
-                                     bcolors.GREEN + "Enter" + bcolors.ENDC + bcolors.BOLD + "' to start!" + bcolors.ENDC)
-            while start_signal != "":
-                start_signal = input(bcolors.BOLD + "Ready? please press '" +
-                                         bcolors.GREEN + "Enter" + bcolors.ENDC + bcolors.BOLD + "' to start!" + bcolors.ENDC)
+                                 bcolors.GREEN + "Enter" + bcolors.ENDC + bcolors.BOLD + "' to start!" + bcolors.ENDC)
 
-            start_time = datetime.datetime.now()
-            init_hyp = agent.world_model.decode(input_item, bool_verbal=False, dec_beam_size=1)[0]
+        start_time = datetime.datetime.now()
+        init_hyp = agent.world_model.decode(input_item, bool_verbal=False, dec_beam_size=1)[0]
 
-            try:
-                hyp, bool_exit = agent.real_user_interactive_parsing_session(
-                    user, input_item, init_hyp, bool_verbal=False)
-            except Exception:
-                print("Interaction Exception in example {}!".format(idx))
-                hyp = init_hyp
+        try:
+            hyp, bool_exit = agent.real_user_interactive_parsing_session(
+                user, input_item, init_hyp, bool_verbal=False)
+        except Exception:
+            print("Interaction Exception in the example!")
+            hyp = init_hyp
 
-            print("\nPredicted SQL: {}".format(" ".join(hyp.sql)))
-            per_time_spent = datetime.datetime.now() - start_time
-            print("Your time spent: {}".format(per_time_spent))
+        print("\nPredicted SQL: {}".format(" ".join(hyp.sql)))
+        per_time_spent = datetime.datetime.now() - start_time
+        print("Your time spent: {}".format(per_time_spent))
 
-            # post survey
-            print("-" * 50)
-            print("Post-study Survey: ")
+        # post survey
+        print("-" * 50)
+        print("Post-study Survey: ")
+        bool_unclear = input("Is the " + bcolors.BOLD + bcolors.PINK + "initial question" +
+                             bcolors.ENDC + " clear?\nPlease enter y/n: ")
+        while bool_unclear not in {'y', 'n'}:
             bool_unclear = input("Is the " + bcolors.BOLD + bcolors.PINK + "initial question" +
-                                     bcolors.ENDC + " clear?\nPlease enter y/n: ")
-            while bool_unclear not in {'y', 'n'}:
-                bool_unclear = input("Is the " + bcolors.BOLD + bcolors.PINK + "initial question" +
-                                         bcolors.ENDC + " clear?\nPlease enter y/n: ")
-            print("-" * 50)
+                                 bcolors.ENDC + " clear?\nPlease enter y/n: ")
 
-            end_signal = input(bcolors.GREEN + bcolors.BOLD +
-                                   "Next? Press 'Enter' to continue, Ctrl+C to quit." + bcolors.ENDC)
-            if end_signal != "":
-                return
-
-
-if __name__ == "__main__":
-    params = interpret_args()
+# the main function
+def main(params):
 
     # Prepare the dataset into the proper form.
     atisdata = atis_data.ATISDataset(params)
@@ -376,4 +368,7 @@ if __name__ == "__main__":
 
     # only leave job == "test_w_interaction" and user == "real"
     reorganized_data = atisdata.get_all_interactions(atisdata.valid_data)
-    real_user_interaction(reorganized_data[3:], user, agent, params.eval_maximum_sql_length)
+    real_user_interaction(reorganized_data[0], user, agent, params.eval_maximum_sql_length)
+
+if __name__ == "__main__":
+    main(interpret_args())

@@ -23,5 +23,6 @@ def passSent():
     sentence = request.get_json()['sentence']
     print(sentence)
     return jsonify('yes!!!')
+
 if __name__ == '__main__':
     app.run()

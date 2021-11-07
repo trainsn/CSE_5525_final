@@ -1,22 +1,21 @@
 <template>
-  <div id="app">
+  <div id="app" style="border: 1px solid lightgray; border-radius: 4px; height:800px;">
+      <el-row style="background: #99a9bf; height:30px">
+         <el-select v-model="table_selected_id" placeholder="Please select one table" size="mini" style="float:left" @change=changeTable()>
+          <el-option
+            v-for="item in table_options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value">
+          </el-option>
+        </el-select>
+      </el-row>
       <el-row style="height:300px">
         <el-table
       :data="tableData"
       style="width: 100%">
-      <el-table-column
-        prop="date"
-        label="Date"
-        width="180">
-      </el-table-column>
-      <el-table-column
-        prop="name"
-        label="Name"
-        width="180">
-      </el-table-column>
-      <el-table-column
-        prop="address"
-        label="Address">
+      <el-table-column v-for="subtitle in column_list" :key="subtitle" fixed :prop="subtitle"
+        :label="subtitle">
       </el-table-column>
     </el-table>
 	</el-row>
@@ -39,6 +38,11 @@
 
 <script>
 // import River from './components/River.vue'
+import table1_Data from '../public/table1.json'
+import table2_Data from '../public/table2.json'
+import table3_Data from '../public/table3.json'
+import table4_Data from '../public/table4.json'
+
 import * as d3 from 'd3'
 import axios from 'axios'
 export default {
@@ -48,30 +52,45 @@ export default {
   },
   data(){
       return{
+        table_options: [{
+          value: '1',
+          label: 'Ref_Template_Types'
+        }, {
+          value: '2',
+          label: 'Templates'
+        }, {
+          value: '3',
+          label: 'Documents'
+        }, {
+          value: '4',
+          label: 'Paragraphs'
+        }],
+        table_selected_id: '1',
         input_sent: "",
-	tableData: [{
-            date: '2016-05-03',
-            name: 'Tom',
-            address: 'No. 189, Grove St, Los Angeles'
-          }, {
-            date: '2016-05-02',
-            name: 'Tom',
-            address: 'No. 189, Grove St, Los Angeles'
-          }, {
-            date: '2016-05-04',
-            name: 'Tom',
-            address: 'No. 189, Grove St, Los Angeles'
-          }, {
-            date: '2016-05-01',
-            name: 'Tom',
-            address: 'No. 189, Grove St, Los Angeles'
-          }]
+        column_list: [],
+        tableData: []
       }
     },
   created(){
-
+    this.changeTable()
   },
   methods: {
+    changeTable(){
+      if (this.table_selected_id=="1"){
+        this.tableData = table1_Data['data']
+        this.column_list = table1_Data['columns']
+      }else if(this.table_selected_id=="2"){
+        this.tableData = table2_Data['data']
+        this.column_list = table2_Data['columns']
+      }else if(this.table_selected_id=="3"){
+        this.tableData = table3_Data['data']
+        this.column_list = table3_Data['columns']
+      }else if(this.table_selected_id=="4"){
+        this.tableData = table4_Data['data']
+        this.column_list = table4_Data['columns']
+      }
+      
+    },
     passSent(){
       const path = 'http://localhost:5000/passSent'
       const payload = {

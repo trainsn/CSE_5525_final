@@ -1,0 +1,24 @@
+{"data":[{
+    "Template_ID":0,
+    "Version_Number": 5,
+    "Template_Type_Code":"PP",
+    "Date_Effective_From":"2005-11-12 07:09:48",
+    "Date_Effective_To":"2008-01-05 14:19:28",
+    "Template_Details":""
+},{
+    "Template_ID":1,
+    "Version_Number": 9,
+    "Template_Type_Code":"PP",
+    "Date_Effective_From":"2010-09-24 01:15:11",
+    "Date_Effective_To":"1999-07-08 03:31:04",
+    "Template_Details":""
+},{
+    "Template_ID":0,
+    "Version_Number": 7,
+    "Template_Type_Code":"BK",
+    "Date_Effective_From":"2002-03-02 14:39:49",
+    "Date_Effective_To":"2001-04-18 09:29:52",
+    "Template_Details":""
+}],
+"columns":["Template_ID","Version_Number","Template_Type_Code","Date_Effective_From","Date_Effective_To","Template_Details"]
+}

@@ -1,0 +1,12 @@
+{"data":[{
+    "Template_Type_Code":"PPT",
+    "Template_Type_Description": "Presentation"
+},{
+    "Template_Type_Code":"CV",
+    "Template_Type_Description":"CV"
+},{
+    "Template_Type_Code":"AD",
+    "Template_Type_Description":"Advertisement"
+}],
+"columns":["Template_Type_Code","Template_Type_Description"]
+}

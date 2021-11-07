@@ -73,8 +73,19 @@ export default {
     },
   created(){
     this.changeTable()
+    this.onload()
   },
   methods: {
+    onload(){
+      const path = 'http://localhost:5000/onload'
+      axios.get(path)
+      .then((res)=>{
+         console.log(res.data)
+      })
+      .catch((error)=>{
+          console.log(error)
+      })
+    },
     changeTable(){
       if (this.table_selected_id=="1"){
         this.tableData = table1_Data['data']
@@ -89,7 +100,7 @@ export default {
         this.tableData = table4_Data['data']
         this.column_list = table4_Data['columns']
       }
-      
+    
     },
     passSent(){
       const path = 'http://localhost:5000/passSent'

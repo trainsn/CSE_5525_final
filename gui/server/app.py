@@ -23,6 +23,10 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 def ping_pong():
     return jsonify('pong!')
 
+@app.route('/onload', methods=['GET'])
+def onload():
+    example, user, agent, eval_maximum_sql_length = interaction_editsql.main(interpret_args())
+
 @app.route('/passSent', methods=['POST'])
 def passSent():
     sentence = request.get_json()['sentence']
@@ -225,6 +229,6 @@ def interpret_args():
     return args
 
 if __name__ == '__main__':
-    example, user, agent, eval_maximum_sql_length = interaction_editsql.main(interpret_args())
+    # example, user, agent, eval_maximum_sql_length = interaction_editsql.main(interpret_args())
     interaction_editsql.real_user_interaction(example, user, agent, eval_maximum_sql_length)
     # app.run()

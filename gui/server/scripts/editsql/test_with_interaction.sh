@@ -1,6 +1,6 @@
 #! /bin/bash
 
-source activate gpu-py3
+#source activate gpu-py3
 export CUDA_VISIBLE_DEVICES=0
 
 SETTING="online_pretrain_10p" # online_pretrain_10p, full_train
@@ -20,7 +20,7 @@ ED="prob=0.995"
 OUTPUT_PATH=test_DATAdev_OP${NUM_OP}_ED${ED}_USERsim_SETTING${SETTING}
 echo ${OUTPUT_PATH}
 
-python3 interaction_editsql.py \
+python3 app.py \
       --raw_train_filename="EditSQL/data_clean/spider_data_removefrom/train_10p.pkl" \
       --raw_validation_filename="EditSQL/data_clean/spider_data_removefrom/dev.pkl" \
       --database_schema_filename="EditSQL/data_clean/spider_data_removefrom/tables.json" \
@@ -45,7 +45,6 @@ python3 interaction_editsql.py \
       --use_predicted_queries=1 \
       --eval_maximum_sql_length=100 \
       --job="test_w_interaction" \
-      --num_options=${NUM_OP} --err_detector=${ED} --friendly_agent=0 --user="sim" \
+      --num_options=${NUM_OP} --err_detector=${ED} --friendly_agent=0 \
       --setting=${SETTING} --ask_structure=1 \
-      --output_path ${LOGDIR}/records_${OUTPUT_PATH}.json \
-      > ${LOGDIR}/records_${OUTPUT_PATH}.output 2>&1 &
+    #   > ${LOGDIR}/records_${OUTPUT_PATH}.output 2>&1 &

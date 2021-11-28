@@ -1,5 +1,5 @@
 <template>
-  <div id="app" style="border: 1px solid lightgray; border-radius: 4px; height:800px;">
+  <div id="app" style="border: 1px solid lightgray; border-radius: 4px; height:800px;" :loading="div_loading">
       <el-row style="background: #99a9bf; height:30px">
          <el-select v-model="table_selected_id" placeholder="Please select one table" size="mini" style="float:left" @change=changeTable()>
           <el-option
@@ -23,7 +23,7 @@
         <el-col :span="10">
           <el-row>
             <el-col :span="9">
-              <el-button type="primary" @click="startSession()">Start</el-button>
+              <el-button type="primary" @click="startSession()" :loading="buttonLoading">Start</el-button>
             </el-col>
           </el-row>
         </el-col>
@@ -77,7 +77,9 @@ export default {
         tableData: [],
         from_agent: '',
         dialogVisible: false,
-        dialog_info:''
+        dialog_info:'',
+        buttonLoading:false,
+        div_loading: false
       }
     },
   created(){
@@ -86,10 +88,12 @@ export default {
   },
   methods: {
     onload(){
+      this.div_loading = true
       const path = 'http://127.0.0.1:5000/onload'
       axios.get(path)
       .then((res)=>{
          console.log(res.data)
+         this.div_loading = false
       })
       .catch((error)=>{
           console.log(error)
@@ -155,12 +159,14 @@ export default {
         });
     },
     startSession(){
+      this.buttonLoading = true
       const path = 'http://127.0.0.1:5000/startSession'
       const payload = {
           'sentence': this.input_sent,
       }
       axios.post(path, payload)
       .then((res)=>{
+        this.buttonLoading = false
          this.from_agent = res.data
          this.openQuestion()
       })

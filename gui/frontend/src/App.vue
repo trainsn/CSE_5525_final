@@ -22,11 +22,19 @@
       <el-row>
         <el-col :span="10">
           <el-row>
-            <el-col :span="15">
-              <el-input v-model="input_sent" placeholder="Please input your question"></el-input>
-            </el-col>
             <el-col :span="9">
-              <el-button type="primary" @click="passSent()">Pass</el-button>
+              <el-button type="primary" @click="startSession()">Start</el-button>
+              <el-dialog
+                  title="Agent:"
+                  :visible.sync="dialogVisible"
+                  width="30%"
+                  :before-close="handleClose">
+                  <span>{{from_agent}}</span>
+                  <span slot="footer" class="dialog-footer">
+                    <el-button @click="dialogVisible = false">Cancel</el-button>
+                    <el-button type="primary" @click="dialogVisible = false">Confirm</el-button>
+                  </span>
+                </el-dialog>
             </el-col>
           </el-row>
         </el-col>
@@ -68,7 +76,9 @@ export default {
         table_selected_id: '1',
         input_sent: "",
         column_list: [],
-        tableData: []
+        tableData: [],
+        from_agent: '',
+        dialogVisible: false
       }
     },
   created(){
@@ -102,14 +112,16 @@ export default {
       }
     
     },
-    passSent(){
-      const path = 'http://localhost:5000/passSent'
+    startSession(){
+      const path = 'http://localhost:5000/startSession'
       const payload = {
           'sentence': this.input_sent,
       }
       axios.post(path, payload)
       .then((res)=>{
-         console.log(res.data)
+         this.from_agent = res.data
+         this.dialogVisible = true
+         
       })
       .catch((error)=>{
           console.log(error)

@@ -197,13 +197,17 @@ def onload():
     example, user, agent, eval_maximum_sql_length = initial(interpret_args())
     return jsonify('yes')
 
-@app.route('/passSent', methods=['POST'])
-def passSent():
-    sentence = request.get_json()['sentence']
-    print(sentence)
+@app.route('/startSession', methods=['POST'])
+def startSession():
+    #sentence = request.get_json()['sentence']
+    #print(sentence)
     #example, user, agent, eval_maximum_sql_length = interaction_editsql.main(interpret_args())
-    real_user_interaction(example, user, agent, eval_maximum_sql_length)
-    return jsonify('yes!!!')
+    #real_user_interaction(example, user, agent, eval_maximum_sql_length)
+    assert len(example.identifier.split('/')) == 2
+    global database_id, interaction_id
+    database_id, interaction_id = example.identifier.split('/')
+    
+    return jsonify('Please type the question you want to answer!')
 
 def interpret_args():
     """ Interprets the command line arguments, and returns a dictionary. """

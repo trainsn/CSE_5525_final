@@ -24,22 +24,20 @@
           <el-row>
             <el-col :span="9">
               <el-button type="primary" @click="startSession()">Start</el-button>
-              <el-dialog
-                  title="Agent:"
-                  :visible.sync="dialogVisible"
-                  width="30%"
-                  :before-close="handleClose">
-                  <span>{{from_agent}}</span>
-                  <span slot="footer" class="dialog-footer">
-                    <el-button @click="dialogVisible = false">Cancel</el-button>
-                    <el-button type="primary" @click="dialogVisible = false">Confirm</el-button>
-                  </span>
-                </el-dialog>
             </el-col>
           </el-row>
         </el-col>
       </el-row>
-      
+      <el-dialog
+        title="Agent:"
+        :visible.sync="dialogVisible"
+        width="30%">
+        <span>{{dialog_info}}</span>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">Cancel</el-button>
+          <el-button type="primary" @click="clickEnter()">Enter</el-button>
+        </span>
+      </el-dialog>
 
   </div>
 </template>
@@ -78,7 +76,8 @@ export default {
         column_list: [],
         tableData: [],
         from_agent: '',
-        dialogVisible: false
+        dialogVisible: false,
+        dialog_info:''
       }
     },
   created(){
@@ -87,7 +86,7 @@ export default {
   },
   methods: {
     onload(){
-      const path = 'http://localhost:5000/onload'
+      const path = 'http://127.0.0.1:5000/onload'
       axios.get(path)
       .then((res)=>{
          console.log(res.data)
@@ -112,16 +111,58 @@ export default {
       }
     
     },
+    clickEnter(){
+      this.dialogVisible=false
+      const path = "http://127.0.0.1:5000/Enter"
+      axios.get(path)
+      .then((res)=>{
+        console.log(res.data)
+      })
+      .catch((error)=>{
+        console.log(error)
+      })
+    },
+    openEnter(sent){
+      this.dialog_info = sent
+      this.dialogVisible = true
+    },
+    openQuestion(){
+      this.$prompt('Agent', this.from_agent, {
+          confirmButtonText: 'Confirm',
+          cancelButtonText: 'Cancel',
+          inputErrorMessage: 'Invalid input, please input another one.'
+        }).then(({ value }) => {
+          this.$message({
+            type: 'success',
+            message: 'your input is: ' + value
+          });
+          const path = "http://127.0.0.1:5000/ProcessQuestion"
+            const payload = {
+                'question': value,
+            }
+            axios.post(path, payload)
+            .then((res)=>{
+               this.openEnter(res.data)
+            })
+            .catch((error)=>{
+                console.log(error)
+            })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: 'Cancel input'
+          });       
+        });
+    },
     startSession(){
-      const path = 'http://localhost:5000/startSession'
+      const path = 'http://127.0.0.1:5000/startSession'
       const payload = {
           'sentence': this.input_sent,
       }
       axios.post(path, payload)
       .then((res)=>{
          this.from_agent = res.data
-         this.dialogVisible = true
-         
+         this.openQuestion()
       })
       .catch((error)=>{
           console.log(error)

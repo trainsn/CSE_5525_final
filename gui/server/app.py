@@ -209,6 +209,33 @@ def startSession():
     
     return jsonify('Please type the question you want to answer!')
 
+@app.route('/ProcessQuestion',methods=['POST'])
+def ProcessQuestion():
+    global input_item
+    with torch.no_grad():
+        question = request.get_json()['question']
+        input_item = agent.world_model.semparser.spider_single_turn_encoding(
+            example, eval_maximum_sql_length, question)
+    return jsonify('To help you get the answer automatically, the system has following yes/no questions for you. Ready? Press the Enter...')
+
+@app.route('/Enter', methods=['GET'])
+def Enter():
+    with torch.no_grad():
+        start_time = datetime.datetime.now()
+        init_hyp = agent.world_model.decode(input_item, bool_verbal=False, dec_beam_size=1)[0]
+        try:
+            hyp, bool_exit = agent.real_user_interactive_parsing_session(
+                    user, input_item, init_hyp, bool_verbal=False)
+        except Exception:
+            print("Interaction Exception in the example!")
+            hyp = init_hyp
+        per_time_spent = datetime.datetime.now() - start_time
+
+        return jsonify({
+            'sql': hyp.sql,
+            'time': format(per_time_spent)
+        })
+
 def interpret_args():
     """ Interprets the command line arguments, and returns a dictionary. """
     parser = argparse.ArgumentParser()

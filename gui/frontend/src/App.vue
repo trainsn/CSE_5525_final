@@ -38,6 +38,22 @@
           <el-button type="primary" @click="clickEnter()">Enter</el-button>
         </span>
       </el-dialog>
+      <el-dialog
+        title="Agent:"
+        :visible.sync="dialogVisible2"
+        width="30%">
+        <span>{{dialog_info2}}</span>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible2 = false">Cancel</el-button>
+          <el-button type="primary" @click="clickEnter2()">Enter</el-button>
+        </span>
+      </el-dialog>
+       <el-dialog
+        title="Result:"
+        :visible.sync="dialogVisible3"
+        width="30%">
+        <span>{{dialog_info3}}</span>
+      </el-dialog>
 
   </div>
 </template>
@@ -79,7 +95,11 @@ export default {
         dialogVisible: false,
         dialog_info:'',
         buttonLoading:false,
-        div_loading: false
+        div_loading: false,
+        dialogVisible2: false,
+        dialog_info2:'',
+        dialogVisible3: false,
+        dialog_info3:''
       }
     },
   created(){
@@ -115,12 +135,31 @@ export default {
       }
     
     },
+    stop(data){
+      this.dialog_info3 = data['sentence']+': '+data['sql']
+      this.dialogVisible3 = true
+    },
+    clickEnter2(){
+      this.dialogVisible2 = false
+      const path = "http://127.0.0.1:5000/Inter1"
+      axios.get(path)
+      .then((res)=>{
+        console.log(res.data)
+        if (res.data.flag=="stop"){
+          this.stop(res.data)
+        }
+      })
+      .catch((error)=>{
+        console.log(error)
+      })
+    },
     clickEnter(){
       this.dialogVisible=false
       const path = "http://127.0.0.1:5000/Enter"
       axios.get(path)
       .then((res)=>{
-        console.log(res.data)
+          this.dialog_info2 = res.data
+          this.dialogVisible2 = true
       })
       .catch((error)=>{
         console.log(error)

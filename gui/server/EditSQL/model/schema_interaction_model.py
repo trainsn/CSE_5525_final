@@ -48,7 +48,7 @@ class SchemaInteractionATISModel(ATISModel):
             output_vocabulary,
             output_vocabulary_schema,
             anonymizer)
-
+        print('SchemaInteractionATISModel function...')
         if self.params.use_schema_encoder:
             # Create the schema encoder
             schema_encoder_num_layer = 1

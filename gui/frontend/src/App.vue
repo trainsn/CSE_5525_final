@@ -1,33 +1,40 @@
 <template>
   <div id="app" style="border: 1px solid lightgray; border-radius: 4px; height:800px;" :loading="div_loading">
       <el-row style="background: #99a9bf; height:30px">
-         <el-select v-model="table_selected_id" placeholder="Please select one table" size="mini" style="float:left" @change=changeTable()>
-          <el-option
-            v-for="item in table_options"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value">
-          </el-option>
-        </el-select>
+        <el-col :span="3">
+          <el-select v-model="table_selected_id" placeholder="Please select one table" size="mini" style="float:left" @change=changeTable()>
+            <el-option
+              v-for="item in table_options"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="2">
+          <el-button type="primary" @click="onload()" :loading="buttonLoading_init" size="mini">Initialize</el-button>
+        </el-col>
       </el-row>
-      <el-row style="height:300px">
-        <el-table
-      :data="tableData"
-      style="width: 100%">
-      <el-table-column v-for="subtitle in column_list" :key="subtitle" fixed :prop="subtitle"
-        :label="subtitle">
-      </el-table-column>
-    </el-table>
-	</el-row>
       <el-row>
-        <el-col :span="10">
+        <el-col :span="12">
+          <div style="height:750px;border-right:1px solid #E4E7ED" id="div_graph"></div>
+        </el-col>
+        <el-col :span="12">
           <el-row>
-            <el-col :span="9">
-              <el-button type="primary" @click="startSession()" :loading="buttonLoading">Start</el-button>
+            <el-col :span="10">
+              <el-row>
+                <el-col :span="9">
+                  
+                  <el-button type="primary" @click="startSession()" :loading="buttonLoading">Start</el-button>
+                </el-col>
+              </el-row>
             </el-col>
           </el-row>
         </el-col>
       </el-row>
+      <!-- <el-row style="height:300px" id="div_graph">
+	    </el-row> -->
+      
       <el-dialog
         title="Agent:"
         :visible.sync="dialogVisible"
@@ -64,7 +71,9 @@ import table1_Data from '../public/table1.json'
 import table2_Data from '../public/table2.json'
 import table3_Data from '../public/table3.json'
 import table4_Data from '../public/table4.json'
-
+// import * as Neo4jd3 from './js/neo4jd3'
+import * as Neo4jd3 from './js/Neo4D3.js'
+// import River from '@/components/River.vue'
 import * as d3 from 'd3'
 import axios from 'axios'
 export default {
@@ -74,20 +83,8 @@ export default {
   },
   data(){
       return{
-        table_options: [{
-          value: '1',
-          label: 'Ref_Template_Types'
-        }, {
-          value: '2',
-          label: 'Templates'
-        }, {
-          value: '3',
-          label: 'Documents'
-        }, {
-          value: '4',
-          label: 'Paragraphs'
-        }],
-        table_selected_id: '1',
+        table_options : [],
+        table_selected_id: null,
         input_sent: "",
         column_list: [],
         tableData: [],
@@ -99,40 +96,56 @@ export default {
         dialogVisible2: false,
         dialog_info2:'',
         dialogVisible3: false,
-        dialog_info3:''
+        dialog_info3:'',
+        buttonLoading_init: false,
+        graphData: null,
+        graphTotal: null
       }
     },
   created(){
-    this.changeTable()
-    this.onload()
+    // this.changeTable()
+    // this.onload()
   },
   methods: {
     onload(){
       this.div_loading = true
+      this.buttonLoading_init = true
       const path = 'http://127.0.0.1:5000/onload'
       axios.get(path)
       .then((res)=>{
          console.log(res.data)
          this.div_loading = false
+         this.buttonLoading_init = false
+         this.graphData = res.data[0]['neodata']
+         let temp = []
+         this.graphTotal = res.data
+         res.data.forEach(function(d, i){
+          //  console.log()
+           temp.push({
+             'value': i,
+             'label': d['name']
+           })
+         })
+         this.table_options = temp
+         this.drawGraph()
+
       })
       .catch((error)=>{
           console.log(error)
       })
     },
+    drawGraph(){
+      var that = this
+      var neo4jd3 = Neo4jd3.default('#div_graph', {
+          neo4jData: this.graphData,
+          nodeRadius: 30,
+          infoPanel: false,
+          
+      });
+    },
     changeTable(){
-      if (this.table_selected_id=="1"){
-        this.tableData = table1_Data['data']
-        this.column_list = table1_Data['columns']
-      }else if(this.table_selected_id=="2"){
-        this.tableData = table2_Data['data']
-        this.column_list = table2_Data['columns']
-      }else if(this.table_selected_id=="3"){
-        this.tableData = table3_Data['data']
-        this.column_list = table3_Data['columns']
-      }else if(this.table_selected_id=="4"){
-        this.tableData = table4_Data['data']
-        this.column_list = table4_Data['columns']
-      }
+      // console.log(this.table_selected_id)
+      this.graphData = this.graphTotal[this.table_selected_id]['neodata']
     
     },
     stop(data){
@@ -215,7 +228,9 @@ export default {
     }
   },
   watch:{
-
+    graphData(){
+      this.drawGraph()
+    }
   },
   mounted(){
     

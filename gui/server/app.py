@@ -37,10 +37,9 @@ from EditSQL.question_gen import QuestionGenerator
 from MISP_SQL.utils import SELECT_AGG_v2, WHERE_COL, WHERE_OP, WHERE_ROOT_TERM, GROUP_COL, HAV_AGG_v2, \
     HAV_OP_v2, HAV_ROOT_TERM_v2, ORDER_AGG_v2, ORDER_DESC_ASC, ORDER_LIMIT, IUEN_v2, OUTSIDE
 from user_study_utils import *
-
+from helper import * 
 import pdb
 def initial(params):
-
     # Prepare the dataset into the proper form.
     atisdata = atis_data.ATISDataset(params)
 
@@ -54,12 +53,11 @@ def initial(params):
         atisdata.output_vocabulary,
         atisdata.output_vocabulary_schema,
         None)
-
+    
     model.load(os.path.join(params.logdir, "model_best.pt"))
     model = model.to(device)
     model.eval()
 
-    
     print("ask_structure: {}".format(params.ask_structure))
     question_generator = QuestionGenerator(bool_structure_question=params.ask_structure)
 
@@ -379,7 +377,10 @@ def onload():
     # print('onload function')
     global example, user, world_model, error_detector, question_generator, eval_maximum_sql_length 
     example, user, world_model, error_detector, question_generator, eval_maximum_sql_length = initial(interpret_args())
-    return jsonify('yes')
+    # print(user.tables)
+    output = convert2NeoData(user.tables)
+    # return jsonify(user.tables)
+    return jsonify(output)
 
 @app.route('/startSession', methods=['POST'])
 def startSession():

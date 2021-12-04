@@ -443,7 +443,7 @@ def construct_token_predictor(params,
         anonymizer (Anonymizer): An anonymization object.
     """
 
-
+    print('construct_token_predictor function...')
     if not anonymizer and not params.previous_decoder_snippet_encoding:
         print('using SchemaTokenPredictor')
         return SchemaTokenPredictor(params, vocabulary, utterance_attention_key_size, schema_attention_key_size, snippet_size)

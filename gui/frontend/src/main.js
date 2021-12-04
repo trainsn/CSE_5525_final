@@ -7,7 +7,7 @@ import BootstrapVue from "bootstrap-vue"
 import 'element-ui/lib/theme-chalk/index.css'
 import locale from 'element-ui/lib/locale/lang/en'
 import ElementUI from 'element-ui'
-
+require('./css/neo4d3.css')
 Vue.config.productionTip = false
 Vue.use(BootstrapVue);
 Vue.use(ElementUI, {locale})

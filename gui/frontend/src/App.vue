@@ -14,6 +14,9 @@
         <el-col :span="2">
           <el-button type="primary" @click="onload()" :loading="buttonLoading_init" size="mini">Initialize</el-button>
         </el-col>
+        <el-col :span="2">
+           <el-button type="primary" @click="startSession()" :loading="buttonLoading" size="mini">Run</el-button>
+        </el-col>
       </el-row>
       <el-row>
         <el-col :span="12">
@@ -21,11 +24,19 @@
         </el-col>
         <el-col :span="12">
           <el-row>
+            <el-col :span="18"> 
+              <el-input v-model="input_question" placeholder="For the given database on the left, what is your question?"></el-input>
+            </el-col>
+            <el-col :span="6"> 
+              <el-button @click="passQuestion()" size="median">Process</el-button>
+            </el-col>
+          </el-row>
+          <el-row>
             <el-col :span="10">
               <el-row>
                 <el-col :span="9">
                   
-                  <el-button type="primary" @click="startSession()" :loading="buttonLoading">Start</el-button>
+                  
                 </el-col>
               </el-row>
             </el-col>
@@ -49,12 +60,21 @@
         title="Agent:"
         :visible.sync="dialogVisible2"
         width="30%">
-        <span>{{dialog_info2}}</span>
+        Decision Making Statistics: 
+         <el-table :data="gridData">
+          <el-table-column property="table name" label="Table Name" width="150"></el-table-column>
+          <el-table-column property="column name" label="Column Name" width="200"></el-table-column>
+          <el-table-column property="semantic_tag" label="Semantic Tag"></el-table-column>
+          <el-table-column property="probablity" label="Probability"></el-table-column>
+          <el-table-column property="flag" label="Error Detected"></el-table-column>
+        </el-table>
+        <span>{{agent_ques}}</span>
         <span slot="footer" class="dialog-footer">
           <el-button @click="dialogVisible2 = false">Cancel</el-button>
           <el-button type="primary" @click="clickEnter2()">Enter</el-button>
         </span>
       </el-dialog>
+      
        <el-dialog
         title="Result:"
         :visible.sync="dialogVisible3"
@@ -85,7 +105,6 @@ export default {
       return{
         table_options : [],
         table_selected_id: null,
-        input_sent: "",
         column_list: [],
         tableData: [],
         from_agent: '',
@@ -99,7 +118,11 @@ export default {
         dialog_info3:'',
         buttonLoading_init: false,
         graphData: null,
-        graphTotal: null
+        graphTotal: null,
+        input_question:'',
+        gridData: [],
+        agent_ques:'',
+        count_ :0
       }
     },
   created(){
@@ -153,25 +176,43 @@ export default {
       this.dialogVisible3 = true
     },
     clickEnter2(){
+      this.count+=1
       this.dialogVisible2 = false
+  
       const path = "http://127.0.0.1:5000/Inter1"
       axios.get(path)
       .then((res)=>{
         console.log(res.data)
         if (res.data.flag=="stop"){
           this.stop(res.data)
+        }else{
+          this.gridData = res.data['tag_seq']
+
+          // this.drawHypo(error, tag_seq)
+          // this.dialog_info2 = temp
+          this.agent_ques = res.data['question'].replace(
+            /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+          this.dialogVisible2 = true
         }
       })
       .catch((error)=>{
         console.log(error)
       })
+      
+      
     },
     clickEnter(){
       this.dialogVisible=false
       const path = "http://127.0.0.1:5000/Enter"
       axios.get(path)
       .then((res)=>{
-          this.dialog_info2 = res.data
+          
+          this.gridData = res.data['tag_seq']
+
+          // this.drawHypo(error, tag_seq)
+          // this.dialog_info2 = temp
+          this.agent_ques = res.data['question'].replace(
+            /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
           this.dialogVisible2 = true
       })
       .catch((error)=>{
@@ -182,45 +223,34 @@ export default {
       this.dialog_info = sent
       this.dialogVisible = true
     },
-    openQuestion(){
-      this.$prompt('Agent', this.from_agent, {
-          confirmButtonText: 'Confirm',
-          cancelButtonText: 'Cancel',
-          inputErrorMessage: 'Invalid input, please input another one.'
-        }).then(({ value }) => {
-          this.$message({
-            type: 'success',
-            message: 'your input is: ' + value
-          });
-          const path = "http://127.0.0.1:5000/ProcessQuestion"
-            const payload = {
-                'question': value,
-            }
-            axios.post(path, payload)
-            .then((res)=>{
-               this.openEnter(res.data)
-            })
-            .catch((error)=>{
-                console.log(error)
-            })
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: 'Cancel input'
-          });       
-        });
+    passQuestion(){
+      const path = "http://127.0.0.1:5000/ProcessQuestion"
+      const payload = {
+          'question': this.input_question,
+      }
+      axios.post(path, payload)
+      .then((res)=>{
+          this.openEnter(res.data)
+      })
+      .catch((error)=>{
+          console.log(error)
+      })
     },
     startSession(){
       this.buttonLoading = true
       const path = 'http://127.0.0.1:5000/startSession'
-      const payload = {
-          'sentence': this.input_sent,
-      }
-      axios.post(path, payload)
+      axios.get(path)
       .then((res)=>{
         this.buttonLoading = false
-         this.from_agent = res.data
-         this.openQuestion()
+        // this.from_agent = res.data
+
+        let table_options_list = []
+        this.table_options.forEach(function(d){
+          table_options_list.push(d['label'])
+        })
+        this.table_selected_id = table_options_list.indexOf(res.data)
+        this.graphData = this.graphTotal[this.table_selected_id]['neodata']
+        // this.openQuestion()
       })
       .catch((error)=>{
           console.log(error)

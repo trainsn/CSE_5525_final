@@ -382,7 +382,7 @@ def onload():
     # return jsonify(user.tables)
     return jsonify(output)
 
-@app.route('/startSession', methods=['POST'])
+@app.route('/startSession', methods=['GET'])
 def startSession():
     #sentence = request.get_json()['sentence']
     #print(sentence)
@@ -391,8 +391,8 @@ def startSession():
     assert len(example.identifier.split('/')) == 2
     global database_id, interaction_id
     database_id, interaction_id = example.identifier.split('/')
-    
-    return jsonify('Please type the question you want to answer!')
+    print(database_id, interaction_id)
+    return jsonify(database_id)
 
 @app.route('/ProcessQuestion',methods=['POST'])
 def ProcessQuestion():
@@ -401,6 +401,7 @@ def ProcessQuestion():
         input_item = world_model.semparser.spider_single_turn_encoding(
             example, eval_maximum_sql_length, request.get_json()['question'].split())
         # print(question)
+    # return jsonify(input_item)
     return jsonify('To help you get the answer automatically, the system has following yes/no questions for you. Ready? Press the Enter...')
 
 
@@ -411,6 +412,8 @@ def Enter():
         start_time = datetime.datetime.now()
         init_hyp = world_model.decode(input_item, bool_verbal=False, dec_beam_size=1)[0]
         # print('init hyp', init_hyp.tag_seq)
+        # print('dec:', init_hyp.dec_seq)
+        # print('logprob', init_hyp.logprob_list)
         # a,b = real_user_interactive_parsing_session(
         #             user, input_item, init_hyp, bool_verbal=False)
         user.update_pred(init_hyp.tag_seq, init_hyp.dec_seq)
@@ -426,27 +429,35 @@ def Enter():
         err_su_pointer_pairs = error_detector.detection(
             init_hyp.tag_seq, start_pos=start_pos, bool_return_first=True)
 
+        # print(err_su_pointer_pairs)
         while len(err_su_pointer_pairs):
             su, pointer = err_su_pointer_pairs[0]
             semantic_tag = su[0]
             question, cheat_sheet = question_generator.question_generation(su, init_hyp.tag_seq, pointer)
-        
+            global tag_seq_str
+            tag_seq_str =[]
+            err_id = init_hyp.tag_seq.index(err_su_pointer_pairs[0][0])
+            for index in range(len(init_hyp.tag_seq)):
+                ele = init_hyp.tag_seq[index]
+                if index==err_id:
+                    flag_t='yes'
+                else:
+                    flag_t='no'
+                tag_seq_str.append({
+                    'semantic_tag': ele[0],
+                    'table name': ele[1][0],
+                    'column name': ele[1][1],
+                    'probablity': str(ele[4]),
+                    'flag': flag_t
+                })
+          
             return jsonify({
+                'tag_seq': tag_seq_str,
+                # 'dec_seq': {'data':init_hyp.dec_seq},
+                # 'error': error_str,
                 'question': question,
                 'cheatsheet': cheat_sheet
             })
-        # try:
-        #     hyp, bool_exit = real_user_interactive_parsing_session(
-        #             user, input_item, init_hyp, bool_verbal=False)
-        # except Exception:
-        #     print("Interaction Exception in the example!")
-        #     hyp = init_hyp
-        # per_time_spent = datetime.datetime.now() - start_time
-
-        # return jsonify({
-        #     'sql': hyp.sql,
-        #     'time': format(per_time_spent)
-        # })
 
 @app.route('/Inter1', methods=['GET'])
 def Inter1():
@@ -466,20 +477,26 @@ def Inter1():
         # print('tym1: ', len(err_su_pointer_pairs))
         err_su_pointer_pairs = error_detector.detection(
             init_hyp.tag_seq, start_pos=start_pos, bool_return_first=True)
+
+        output_string = ""
+        for ele in init_hyp.sql:
+            output_string+= ele +' '
         if len(err_su_pointer_pairs) == 0:
             return {
                 'flag': 'stop',
                 'sentence': 'The system has finished SQL synthesis. This is the predicted SQL',
-                'sql': init_hyp.sql
+                'sql': output_string
             }
         else:
             su, pointer = err_su_pointer_pairs[0]
-            question, cheat_sheet = q_gen.question_generation(su, hyp.tag_seq, pointer)
-            return {
-                'flag': 'continue',
-                'sentence': question
-            }
+            question, cheat_sheet = question_generator.question_generation(su, init_hyp.tag_seq, pointer)
             
+            return {
+                'falg': 'continue',
+                'question':question,
+                'cheatsheet:':cheat_sheet,
+                'tag_seq': tag_seq_str 
+            }
 
 def interpret_args():
     """ Interprets the command line arguments, and returns a dictionary. """
